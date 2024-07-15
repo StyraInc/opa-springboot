@@ -44,6 +44,8 @@ dependencies {
 	testImplementation 'org.testcontainers:testcontainers-bom:1.19.7'
 	testImplementation 'org.testcontainers:testcontainers:1.19.7'
 	testImplementation 'org.testcontainers:junit-jupiter:1.19.7'
+	testImplementation 'org.mockito:mockito-core:+'
+	testImplementation 'org.mockito:mockito-junit-jupiter:+'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.17.1'
     implementation 'org.apache.tomcat.embed:tomcat-embed-core:10.1.24'
     implementation 'org.slf4j:slf4j-api:2.0.13'

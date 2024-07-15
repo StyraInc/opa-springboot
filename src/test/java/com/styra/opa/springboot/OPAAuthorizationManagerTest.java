@@ -2,12 +2,20 @@ package com.styra.opa.springboot;
 
 import com.styra.opa.OPAClient;
 import com.styra.opa.OPAException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
@@ -18,14 +26,35 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doReturn;
 
 @Testcontainers
 class OPAAuthorizationManagerTest {
+
+    @Mock
+    private Supplier<Authentication> authenticationSupplier;
+
+    @Mock
+    private RequestAuthorizationContext context;
+
+    @Mock
+    private HttpServletRequest httpServletRequest;
 
     private int opaPort = 8181;
     private int altPort = 8282;
@@ -61,8 +90,44 @@ class OPAAuthorizationManagerTest {
         .withCommand("run -s --authentication=token --authorization=basic --bundle /policy");
     //CHECKSTYLE:ON
 
+    private Authentication createMockAuthentication() {
+        Authentication mockAuth = mock(Authentication.class);
+        when(mockAuth.getPrincipal()).thenReturn("testuser");
+        when(mockAuth.getCredentials()).thenReturn("letmein");
+
+        WebAuthenticationDetails details = new WebAuthenticationDetails(httpServletRequest);
+        when(mockAuth.getDetails()).thenReturn(details);
+
+        GrantedAuthority authority1 = new SimpleGrantedAuthority("ROLE_USER");
+        GrantedAuthority authority2 = new SimpleGrantedAuthority("ROLE_ADMIN");
+        Collection<? extends GrantedAuthority> authorities = Arrays.asList(authority1, authority2);
+        doReturn(authorities).when(mockAuth).getAuthorities();
+
+        when(mockAuth.isAuthenticated()).thenReturn(true);
+
+        return mockAuth;
+    }
+
     @BeforeEach
     public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        when(context.getRequest()).thenReturn(httpServletRequest);
+
+        HashMap<String, String> mockHeaders = new HashMap<>();
+        mockHeaders.put("UnitTestHeader", "123abc");
+        when(httpServletRequest.getHeaderNames()).thenReturn(Collections.enumeration(mockHeaders.keySet()));
+        when(httpServletRequest.getHeader(anyString())).thenAnswer(invocation -> {
+            String headerName = invocation.getArgument(0);
+            return mockHeaders.get(headerName);
+        });
+
+        when(httpServletRequest.getServletPath()).thenReturn("unit/test");
+        when(httpServletRequest.getMethod()).thenReturn("GET");
+        when(httpServletRequest.getProtocol()).thenReturn("HTTP/1.1");
+        when(httpServletRequest.getRemoteHost()).thenReturn("example.com");
+        when(httpServletRequest.getRemoteAddr()).thenReturn("192.0.2.123");
+
+
         address = "http://" + opac.getHost() + ":" + opac.getMappedPort(opaPort);
         altAddress = "http://" + opac.getHost() + ":" + opac.getMappedPort(altPort) + "/customprefix";
     }
@@ -128,8 +193,26 @@ class OPAAuthorizationManagerTest {
         // Make sure that with a simple always-allow rule, we allow all
         // requests.
 
+        Authentication mockAuth = this.createMockAuthentication();
+        when(authenticationSupplier.get()).thenReturn(mockAuth);
         OPAClient opa = new OPAClient(address, headers);
-        AuthorizationManager<RequestAuthorizationContext> am = new OPAAuthorizationManager(opa);
+        AuthorizationManager<RequestAuthorizationContext> am = new OPAAuthorizationManager(opa, "policy/decision_always_true");
+        AuthorizationDecision actual = am.check(this.authenticationSupplier, this.context);
+        assertEquals(actual.isGranted(), true);
+
+    }
+
+    @Test
+    public void testOPAAuthorizationManagerSimpleDeny() {
+        // Make sure that with a simple always-deny rule, we deny all
+        // requests.
+
+        Authentication mockAuth = this.createMockAuthentication();
+        when(authenticationSupplier.get()).thenReturn(mockAuth);
+        OPAClient opa = new OPAClient(address, headers);
+        AuthorizationManager<RequestAuthorizationContext> am = new OPAAuthorizationManager(opa, "policy/decision_always_false");
+        AuthorizationDecision actual = am.check(this.authenticationSupplier, this.context);
+        assertEquals(actual.isGranted(), false);
 
     }
 
