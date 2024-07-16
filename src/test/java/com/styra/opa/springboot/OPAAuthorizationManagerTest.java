@@ -127,7 +127,6 @@ class OPAAuthorizationManagerTest {
         when(httpServletRequest.getRemoteHost()).thenReturn("example.com");
         when(httpServletRequest.getRemoteAddr()).thenReturn("192.0.2.123");
 
-
         address = "http://" + opac.getHost() + ":" + opac.getMappedPort(opaPort);
         altAddress = "http://" + opac.getHost() + ":" + opac.getMappedPort(altPort) + "/customprefix";
     }
@@ -213,6 +212,68 @@ class OPAAuthorizationManagerTest {
         AuthorizationManager<RequestAuthorizationContext> am = new OPAAuthorizationManager(opa, "policy/decision_always_false");
         AuthorizationDecision actual = am.check(this.authenticationSupplier, this.context);
         assertEquals(actual.isGranted(), false);
+
+    }
+
+    @Test
+    public void testOPAAuthorizationManagerEcho() {
+        // By reading back the input, we can make sure the OPA input has the
+        // right structure and content.
+
+        Map<String, Object> expectData = Map.ofEntries(
+                entry("action", Map.ofEntries(
+                    entry("headers", Map.ofEntries(
+                        entry("UnitTestHeader", "123abc")
+                    )),
+                    entry("name", "GET"),
+                    entry("protocol", "HTTP/1.1")
+                )),
+                entry("context", Map.ofEntries(
+                    entry("host", "example.com"),
+                    entry("ip", "192.0.2.123"),
+                    entry("port", 0),
+                    entry("type", "http")
+                )),
+                entry("resource", Map.ofEntries(
+                    entry("id", "unit/test"),
+                    entry("type", "endpoint")
+                )),
+                entry("subject", Map.ofEntries(
+                    entry("authorities", List.of(
+                        Map.ofEntries(entry("authority", "ROLE_USER")),
+                        Map.ofEntries(entry("authority", "ROLE_ADMIN"))
+                    )),
+                    entry("details", Map.ofEntries(
+                        entry("remoteAddress", "192.0.2.123"),
+                        entry("sessionId", "null")
+                    )),
+                    entry("id", "testuser"),
+                    entry("type", "java_authentication")
+                ))
+        );
+
+        OPAResponseContext expectCtx = new OPAResponseContext();
+        expectCtx.setReasonUser(Map.ofEntries(entry("en", "echo rule always allows")));
+        expectCtx.setId("0");
+        expectCtx.setData(expectData);
+
+        OPAResponse expect = new OPAResponse();
+        expect.setDecision(true);
+        expect.setContext(expectCtx);
+
+        ContextDataProvider prov = new ConstantContextDataProvider(java.util.Map.ofEntries(
+            entry("hello", "world")
+        ));
+        Authentication mockAuth = this.createMockAuthentication();
+        when(authenticationSupplier.get()).thenReturn(mockAuth);
+        OPAClient opa = new OPAClient(address, headers);
+        OPAAuthorizationManager am = new OPAAuthorizationManager(opa, "policy/echo", prov);
+        OPAResponse actual = am.opaRequest(this.authenticationSupplier, this.context);
+
+        assertEquals(actual.getDecision(), expect.getDecision());
+        assertEquals(actual.getContext().getId(), expect.getContext().getId());
+        assertEquals(actual.getContext().getReasonUser(), expect.getContext().getReasonUser());
+        assertEquals(actual.getContext().getData(), expect.getContext().getData());
 
     }
 

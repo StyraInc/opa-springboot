@@ -36,6 +36,8 @@ public class OPAAuthorizationManager
     // If opaPath is null, then we assume the user wants to use the default path.
     private String opaPath;
 
+    private ContextDataProvider ctxProvider;
+
     private OPAClient opa;
 
     public OPAAuthorizationManager() {
@@ -57,6 +59,17 @@ public class OPAAuthorizationManager
     public OPAAuthorizationManager(OPAClient opa, String newOpaPath) {
         this.opa = opa;
         this.opaPath = newOpaPath;
+    }
+
+    public OPAAuthorizationManager(OPAClient opa, ContextDataProvider newProvider) {
+        this.opa = opa;
+        this.ctxProvider = newProvider;
+    }
+
+    public OPAAuthorizationManager(OPAClient opa, String newOpaPath, ContextDataProvider newProvider) {
+        this.opa = opa;
+        this.opaPath = newOpaPath;
+        this.ctxProvider = newProvider;
     }
 
     private Map<String, Object> makeRequestInput(
@@ -88,6 +101,17 @@ public class OPAAuthorizationManager
         String contextRemoteHost = request.getRemoteHost();
         Integer contextRemotePort = request.getRemotePort();
 
+        HashMap<String, Object> ctx = new HashMap<String, Object>();
+        ctx.put("type", RequestContextType);
+        ctx.put("host", contextRemoteHost);
+        ctx.put("ip", contextRemoteAddr);
+        ctx.put("port", contextRemotePort);
+
+        if (this.ctxProvider != null) {
+            Object contextData = this.ctxProvider.getContextData(authentication, object);
+            ctx.put("data", contextData);
+        }
+
         java.util.Map<String, Object> iMap = java.util.Map.ofEntries(
             entry(
                 "subject",
@@ -113,21 +137,20 @@ public class OPAAuthorizationManager
                     entry("headers", headers)
                 )
             ),
-            entry(
-                "context",
-                java.util.Map.ofEntries(
-                    entry("type", RequestContextType),
-                    entry("host", contextRemoteHost),
-                    entry("ip", contextRemoteAddr),
-                    entry("port", contextRemotePort)
-                )
-            )
+            entry("context", ctx)
         );
 
         return iMap;
     }
 
-    private OPAResponse opaMachinery(
+    /**
+     * This method can be used to directly call OPA without generating an
+     * AuthorizationDecision, which can be used to examine the OPA response.
+     * You should consider using the OPA-Java SDK (which OPA-SpringBoot depends
+     * on) directly rather than using this method, as it should not be needed
+     * during normal use.
+     */
+    public OPAResponse opaRequest(
         Supplier<Authentication> authentication,
         RequestAuthorizationContext object
     ) {
@@ -158,7 +181,7 @@ public class OPAAuthorizationManager
         Supplier<Authentication> authentication,
         RequestAuthorizationContext object
     ) {
-        OPAResponse resp = this.opaMachinery(authentication, object);
+        OPAResponse resp = this.opaRequest(authentication, object);
         if (resp == null) {
             logger.trace(
                 "OPA provided a null response, default-denying access"
@@ -172,15 +195,15 @@ public class OPAAuthorizationManager
         Supplier<Authentication> authentication,
         RequestAuthorizationContext object
     ) {
-        OPAResponse resp = this.opaMachinery(authentication, object);
+        OPAResponse resp = this.opaRequest(authentication, object);
         if (resp == null) {
             throw new AccessDeniedException("null response from policy");
         }
 
         boolean allow = resp.getDecision();
         String reason = "access denied by policy";
-        if (resp.getContext() != null) {
-            reason = resp.getContext().getReason();
+        if (resp.getReasonForDecision() != null) {
+            reason = resp.getReasonForDecision();
         }
 
         if (allow) {

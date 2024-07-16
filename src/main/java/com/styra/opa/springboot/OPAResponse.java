@@ -33,4 +33,16 @@ public class OPAResponse {
         this.context = newContext;
     }
 
+    /**
+     * Wraps OPAResponseContext.getReasonForDecision(). If the context is
+     * omitted (which the spec permits), then it returns null.
+     */
+    public String getReasonForDecision() {
+        if (this.context == null) {
+            return null;
+        }
+
+        return this.context.getReasonForDecision();
+    }
+
 }

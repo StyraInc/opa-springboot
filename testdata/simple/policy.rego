@@ -1,6 +1,15 @@
 package policy
 
-echo := input
+echo := {
+    "decision": true,
+    "context": {
+        "id": "0",
+        "reason_user": {
+            "en": "echo rule always allows",
+        },
+        "data": input,
+    }
+}
 
 always_false := false
 
