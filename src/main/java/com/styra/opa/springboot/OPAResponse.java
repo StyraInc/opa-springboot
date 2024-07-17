@@ -5,8 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * This class models the data to be returned from an OPA-SpringBoot policy. It
- * is used for deserialization.
+ * This class models the data to be returned from an OPA-SpringBoot policy. The
+ * structure of the response is defined by the AuthZEN spec
+ * (https://openid.github.io/authzen).
  */
 @Data
 @NoArgsConstructor

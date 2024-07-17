@@ -1,18 +1,18 @@
 package com.styra.opa.springboot;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Map;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class models the data to be returned from an OPA-SpringBoot policy
- * under the context key. It is used for deserialization.
+ * under the context key.
  *
  * This corresponds to the Context object in the AuthZen spec, see:
  * https://openid.github.io/authzen/#section-5.4
