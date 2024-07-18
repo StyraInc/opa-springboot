@@ -11,7 +11,7 @@ You can use the Styra OPA-SpringBoot SDK to connect [Open Policy Agent](https://
 
 This package is published on Maven Central as TODO. The Maven Central page includes up-to-date instructions to add it as a dependency to your Java project, tailored to a variety of build systems including Maven and Gradle.
 
-If you wish to build from source and publish the SDK artifact to your local Maven repository (on your filesystem) then use the following command (after cloing the git repo locally):
+If you wish to build from source and publish the SDK artifact to your local Maven repository (on your filesystem) then use the following command (after cloning the git repo locally):
 
 On Linux/MacOS:
 
@@ -27,26 +27,26 @@ gradlew.bat publishToMavenLocal -Pskip.signing
 
 ## SDK Example Usage (high-level)
 
-TODO
 
 ```java
-import TODO.OPAAuthorizationManager;
+import com.styra.opa.springboot.OPAAuthorizationManager;
+import com.styra.opa.OPAClient;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Autowired
+    TicketRepository ticketRepository;
+
+    @Autowired
+    TenantRepository tenantRepository;
+
+    @Autowired
+    CustomerRepository customerRepository;
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // NOTE: The `.csrf(...)` disables CSRF protections. This could
-        // be a serious security vulnerability in a production environment.
-        // However, since this API is intended for educational and development
-        // purposes, it is disabled because it makes it easier to work with
-        // locally. If you want to use any of this code for a production
-        // service, it is important to re-enable CSRF protection.
-        //http.authorizeHttpRequests(authorize -> authorize
-        //        .anyRequest().access(customAuthManager())).csrf(csrf -> csrf.disable());
-
 
         String opaURL = "http://localhost:8181";
         String opaURLEnv = System.getenv("OPA_URL");
@@ -55,14 +55,15 @@ public class SecurityConfig {
         }
         OPAClient opa = new OPAClient(opaURL);
 
-        http.authorizeHttpRequests(authorize -> authorize
-                .anyRequest().access(new OPAAuthorizationManager(opa))).csrf(csrf -> csrf.disable());
+        AuthorizationManager<RequestAuthorizationContext> am = new OPAAuthorizationManager(opa, "tickets/spring/main");
+
+        http.authorizeHttpRequests(authorize -> authorize.anyRequest().access(am));
 
         return http.build();
-
     }
 
 }
+
 ```
 
 ## Policy Inputs & Outputs
@@ -94,7 +95,7 @@ In order to make OPA-SpringBoot compatible with [AuthZEN](https://openid.github.
 | `output.context.id` | AuthZEN [Reason Object](https://openid.github.io/authzen/#name-reason-object) ID |
 | `output.context.reason_admin` | AuthZEN [Reason Field Object](https://openid.github.io/authzen/#reason-field), for administrative use |
 | `output.context.reason_user` | AuthZEN [Reason Field Object](https://openid.github.io/authzen/#reason-field), for user-facing error messages |
-| `output.context.data` | Optional supplemental data provided by your OPA policy.
+| `output.context.data` | Optional supplemental data provided by your OPA policy |
 
 ### Build Instructions
 

@@ -1,5 +1,7 @@
 plugins {
 	id 'java'
+	id 'maven-publish'
+	id 'signing'
 	id 'org.springframework.boot' version '3.3.0'
 	id 'io.spring.dependency-management' version '1.1.4'
 	id("checkstyle")
@@ -55,7 +57,7 @@ dependencies {
 }
 
 apply plugin: 'application'
-mainClassName = 'com.styra.opa_springboot'
+mainClassName = 'com.styra.opa.springboot'
 
 tasks.named('test') {
 	useJUnitPlatform()
@@ -97,3 +99,62 @@ gradle.projectsEvaluated {
 	}
 }
 
+
+publishing {
+    repositories {
+        maven {
+            name = "OSSRH"
+            url = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+            credentials {
+                username = System.getenv("MAVEN_USERNAME")
+                password = System.getenv("MAVEN_PASSWORD")
+          }
+        }
+    }
+
+    publications {
+        maven(MavenPublication) {
+            groupId = 'com.styra.opa'
+            artifactId = 'springboot'
+            version = '0.0.1'
+
+            from components.java
+
+            pom {
+                name = 'Styra Spring Boot SDK'
+                description = 'SDK enabling Spring Boot developers to easily integrate with the Styra API.'
+                url = 'https://github.com/styrainc/opa-springboot'
+                scm {
+                    url = 'github.com/styrainc/opa-springboot'
+                    connection = 'scm:git:ssh://git@github.com/styrainc/opa-springboot.git'
+                }
+                licenses { // TODO: should be apache 2
+                    license {
+                        name = 'The MIT License (MIT)'
+                        url = 'https://mit-license.org/'
+                    }
+                }
+                developers {
+                    developer {
+                        name = 'Styra'
+                        organization = 'Styra'
+                        email = 'devrel@styra.com'
+                    }
+                }
+                organization {
+                    name = 'Styra'
+                    url = 'www.styra.com'
+                }
+            }
+        }
+    }
+}
+
+if (!project.hasProperty('skip.signing')) {
+    signing {
+        def signingKey = findProperty("signingKey")
+        def signingPassphrase = findProperty("signingPassphrase")
+        useInMemoryPgpKeys(signingKey, signingPassphrase)
+        sign publishing.publications.maven
+    }
+}
