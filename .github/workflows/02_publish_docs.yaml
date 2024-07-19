@@ -8,25 +8,13 @@ on:
       - CHANGELOG.md
 
 jobs:
-  check_changelog:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: check for unreleased changes
-        id: check_changelog_script
-        run: |
-          if ./scripts/is_release.sh ; then
-            echo "release_ok=false" >> $GITHUB_OUTPUT
-          else
-            echo "release_ok=true" >> $GITHUB_OUTPUT
-          fi
-
   docs:
-    needs: check_changelog
-    if: needs.check_changelog.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
+      - name: Tune GitHub-hosted runner network
+        uses: smorimoto/tune-github-hosted-runner-network@v1
       - uses: actions/checkout@v4
+      - run: ./scripts/is_release.sh # fail the build if unreleased changes
       - uses: gradle/gradle-build-action@v3
       - run: ./scripts/build_docs.sh ./build/docsite
       - name: Deploy to GitHub Pages
