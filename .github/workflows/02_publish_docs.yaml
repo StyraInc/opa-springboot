@@ -15,9 +15,9 @@ jobs:
         id: check_changelog_script
         run: |
           if ./scripts/is_release.sh ; then
-            echo "release_ok=true" >> $GITHUB_OUTPUT
-          else
             echo "release_ok=false" >> $GITHUB_OUTPUT
+          else
+            echo "release_ok=true" >> $GITHUB_OUTPUT
           fi
 
   docs:
