@@ -1,5 +1,6 @@
 name: "03 - Publish to Maven Central"
 on:
+  workflow_dispatch:
   push:
     branches:
       - main

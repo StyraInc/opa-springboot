@@ -1,5 +1,6 @@
 name: "02 - Publish Docs"
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
