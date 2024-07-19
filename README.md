@@ -1,5 +1,8 @@
 # OPA-SpringBoot
 
+> [!IMPORTANT]
+> **Under Construction!** This repository is a work in progress. Bear with us while we get things ready for prime time.
+
 TODO: docs links
 
 You can use the Styra OPA-SpringBoot SDK to connect [Open Policy Agent](https://www.openpolicyagent.org/) and [Enterprise OPA](https://www.styra.com/enterprise-opa/) deployments to your [Spring Boot](https://spring.io/projects/spring-boot) applications using the included [AuthorizationManager](https://docs.spring.io/spring-security/reference/servlet/authorization/architecture.html#_the_authorizationmanager) implementation. The policy inputs and outputs follow the [AuthZEN specification](https://openid.github.io/authzen).
@@ -29,6 +32,8 @@ gradlew.bat publishToMavenLocal -Pskip.signing
 
 
 ```java
+// ... 
+
 import com.styra.opa.springboot.OPAAuthorizationManager;
 import com.styra.opa.OPAClient;
 
@@ -97,7 +102,7 @@ In order to make OPA-SpringBoot compatible with [AuthZEN](https://openid.github.
 | `output.context.reason_user` | AuthZEN [Reason Field Object](https://openid.github.io/authzen/#reason-field), for user-facing error messages |
 | `output.context.data` | Optional supplemental data provided by your OPA policy |
 
-### Build Instructions
+## Build Instructions
 
 TODO: test me
 
@@ -113,3 +118,7 @@ TODO: test me
 
 For questions, discussions and announcements related to Styra products, services and open source projects, please join
 the Styra community on [Slack](https://communityinviter.com/apps/styracommunity/signup)!
+
+## Development
+
+For development docs, see [DEVELOPMENT.md](./DEVELOPMENT.md).

@@ -1,0 +1,57 @@
+name: "03 - Publish to Maven Central"
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - CHANGELOG.md
+
+jobs:
+  check_changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: check for unreleased changes
+        id: check_changelog_script
+        run: |
+          if ./scripts/is_release.sh ; then
+            echo "release_ok=true" >> $GITHUB_OUTPUT
+          else
+            echo "release_ok=false" >> $GITHUB_OUTPUT
+          fi
+
+  publish:
+    name: Publish Java SDK
+    needs: check_changelog
+    if: needs.check_changelog.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tune GitHub-hosted runner network
+        uses: smorimoto/tune-github-hosted-runner-network@v1
+      - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "corretto"
+          cache: "gradle"
+      - name: Publish to Sonatype (legacy)
+        run: |-
+          pwd
+          ./gradlew publish --no-daemon
+        env:
+          MAVEN_USERNAME: ${{ secrets.ossrh_username }}
+          MAVEN_PASSWORD: ${{ secrets.ossrh_password }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.java_gpg_secret_key }}
+          ORG_GRADLE_PROJECT_signingPassphrase: ${{ secrets.java_gpg_passphrase }}
+      - uses: ravsamhq/notify-slack-action@v2
+        if: always() && env.SLACK_WEBHOOK_URL != ''
+        with:
+          status: ${{ job.status }}
+          token: ${{ secrets.github_access_token }}
+          notify_when: "failure"
+          notification_title: "Failed to Publish Maven Central Release"
+          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+          footer: "Linked Repo <{repo_url}|{repo}> | <{run_url}|View Run>"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

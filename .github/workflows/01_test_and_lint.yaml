@@ -1,0 +1,24 @@
+name: "01 - Run unit tests and lint Java code"
+on:
+  pull_request:
+
+jobs:
+  test_and_lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/gradle-build-action@v3
+      - run: ./gradlew test lint checkstyleMain checkstyleTest
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v4
+        if: success() || failure() # always run even if the previous step fails
+        with:
+          report_paths: '**/build/test-results/test/TEST-*.xml'
+      - name: Publish Checkstyle report
+        uses: Juuxel/publish-checkstyle-report@v1
+        if: ${{ failure() || success() }}
+        with:
+          # required: The glob paths to report XML files as a multiline string
+          # The format below works for the Gradle Checkstyle plugin with default configurations
+          reports: |
+            build/reports/checkstyle/*.xml

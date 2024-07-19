@@ -1,0 +1,35 @@
+name: "02 - Publish Docs"
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - CHANGELOG.md
+
+jobs:
+  check_changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: check for unreleased changes
+        id: check_changelog_script
+        run: |
+          if ./scripts/is_release.sh ; then
+            echo "release_ok=true" >> $GITHUB_OUTPUT
+          else
+            echo "release_ok=false" >> $GITHUB_OUTPUT
+          fi
+
+  docs:
+    needs: check_changelog
+    if: needs.check_changelog.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/gradle-build-action@v3
+      - run: ./scripts/build_docs.sh ./build/docsite
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/docsite
