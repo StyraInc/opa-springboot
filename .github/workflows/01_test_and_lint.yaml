@@ -7,8 +7,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "corretto"
+          cache: "gradle"
       - uses: gradle/gradle-build-action@v3
-      - run: chmod +x ./gradlew
       - run: ./gradlew test lint checkstyleMain checkstyleTest
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v4
