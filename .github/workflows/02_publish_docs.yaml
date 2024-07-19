@@ -21,7 +21,7 @@ jobs:
           java-version: "17"
           distribution: "corretto"
           cache: "gradle"
-      - uses: gradle/gradle-build-action@v3
+      - uses: gradle/actions/setup-gradle@v3
       - run: ./scripts/build_docs.sh ./build/docsite
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

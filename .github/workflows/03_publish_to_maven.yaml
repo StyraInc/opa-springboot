@@ -22,6 +22,7 @@ jobs:
           java-version: "17"
           distribution: "corretto"
           cache: "gradle"
+      - uses: gradle/actions/setup-gradle@v3
       - name: Publish to Sonatype (legacy)
         run: |-
           pwd
