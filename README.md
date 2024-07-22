@@ -12,7 +12,7 @@ You can use the Styra OPA-SpringBoot SDK to connect [Open Policy Agent](https://
 
 ## SDK Installation
 
-This package is published on Maven Central as TODO. The Maven Central page includes up-to-date instructions to add it as a dependency to your Java project, tailored to a variety of build systems including Maven and Gradle.
+This package is published on Maven Central as [`com.styra.opa/springboot`](https://central.sonatype.com/artifact/com.styra.opa/springboot). The Maven Central page includes up-to-date instructions to add it as a dependency to your Java project, tailored to a variety of build systems including Maven and Gradle.
 
 If you wish to build from source and publish the SDK artifact to your local Maven repository (on your filesystem) then use the following command (after cloning the git repo locally):
 
@@ -103,8 +103,6 @@ In order to make OPA-SpringBoot compatible with [AuthZEN](https://openid.github.
 | `output.context.data` | Optional supplemental data provided by your OPA policy |
 
 ## Build Instructions
-
-TODO: test me
 
 **To build the SDK**, use `./gradlew build`, the resulting JAR will be placed in `./build/libs/api.jar`.
 
