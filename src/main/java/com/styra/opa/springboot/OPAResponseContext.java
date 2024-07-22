@@ -69,18 +69,18 @@ public class OPAResponseContext {
 
     /**
      * This method selects an appropriate reason to use for creating Spring
-     * authorization decisions. Currently, it will select the 'en' key if it is
-     * present in the reason_user object, and if not it will select the key
+     * authorization decisions. Currently, it will select the search key if it
+     * is present in the reason_user object, and if not it will select the key
      * which sorts first from reason_user. It will not consider data in
      * reason_admin.
      */
-    public String getReasonForDecision() {
+    public String getReasonForDecision(String searchKey) {
         if (this.reasonUser == null) {
             return null;
         }
 
-        if (this.reasonUser.containsKey("en")) {
-            return this.reasonUser.get("en");
+        if (this.reasonUser.containsKey(searchKey)) {
+            return this.reasonUser.get(searchKey);
         }
 
         List<String> keys = new ArrayList<>(this.reasonUser.keySet());
@@ -90,6 +90,6 @@ public class OPAResponseContext {
             return null;
         }
 
-        return keys.get(0);
+        return this.reasonUser.get(keys.get(0));
     }
 }

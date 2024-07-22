@@ -6,6 +6,7 @@ echo := {
         "id": "0",
         "reason_user": {
             "en": "echo rule always allows",
+            "other": "other reason key",
         },
         "data": input,
     }

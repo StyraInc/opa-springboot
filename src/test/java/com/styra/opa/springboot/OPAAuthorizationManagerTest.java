@@ -362,7 +362,10 @@ class OPAAuthorizationManagerTest {
         );
 
         OPAResponseContext expectCtx = new OPAResponseContext();
-        expectCtx.setReasonUser(Map.ofEntries(entry("en", "echo rule always allows")));
+        expectCtx.setReasonUser(Map.ofEntries(
+            entry("en", "echo rule always allows"),
+            entry("other", "other reason key")
+        ));
         expectCtx.setId("0");
         expectCtx.setData(expectData);
 
@@ -393,6 +396,10 @@ class OPAAuthorizationManagerTest {
         }
 
         assertEquals(0, datadiff.size());
+
+        assertEquals("echo rule always allows", actual.getReasonForDecision("en"));
+        assertEquals("other reason key", actual.getReasonForDecision("other"));
+        assertEquals("echo rule always allows", actual.getReasonForDecision("nonexistant"));
 
     }
 

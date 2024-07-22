@@ -45,6 +45,8 @@ public class OPAAuthorizationManager
     // If opaPath is null, then we assume the user wants to use the default path.
     private String opaPath;
 
+    private String reasonKey;
+
     private ContextDataProvider ctxProvider;
 
     private OPAClient opa;
@@ -64,6 +66,7 @@ public class OPAAuthorizationManager
         OPAClient opac = new OPAClient(opaURL);
         this.opa = opac;
         this.opaPath = null;
+        this.reasonKey = "en";
     }
 
     /**
@@ -76,6 +79,7 @@ public class OPAAuthorizationManager
     public OPAAuthorizationManager(OPAClient opa) {
         this.opa = opa;
         this.opaPath = null;
+        this.reasonKey = "en";
     }
 
     /**
@@ -90,6 +94,7 @@ public class OPAAuthorizationManager
     public OPAAuthorizationManager(OPAClient opa, String newOpaPath) {
         this.opa = opa;
         this.opaPath = newOpaPath;
+        this.reasonKey = "en";
     }
 
     /**
@@ -104,6 +109,7 @@ public class OPAAuthorizationManager
     public OPAAuthorizationManager(OPAClient opa, ContextDataProvider newProvider) {
         this.opa = opa;
         this.ctxProvider = newProvider;
+        this.reasonKey = "en";
     }
 
     /**
@@ -119,6 +125,23 @@ public class OPAAuthorizationManager
         this.opa = opa;
         this.opaPath = newOpaPath;
         this.ctxProvider = newProvider;
+        this.reasonKey = "en";
+    }
+
+    public String getReasonKey() {
+        return this.reasonKey;
+    }
+
+    /**
+     * Changes the "preferred" key where the access decision reason should be
+     * searched for in the OPAResponse object. A default value of 'en' is used.
+     * If the selected key is not present in the response, the key which sorts
+     * lexicographically first is used instead.
+     *
+     * @param newReasonKey
+     */
+    public void setReasonKey(String newReasonKey) {
+        this.reasonKey = newReasonKey;
     }
 
     private Map<String, Object> makeRequestInput(
@@ -250,9 +273,9 @@ public class OPAAuthorizationManager
         }
 
         boolean allow = resp.getDecision();
-        String reason = "access denied by policy";
-        if (resp.getReasonForDecision() != null) {
-            reason = resp.getReasonForDecision();
+        String reason = resp.getReasonForDecision(this.reasonKey);
+        if (reason == null) {
+            reason = "access denied by policy";
         }
 
         if (allow) {
