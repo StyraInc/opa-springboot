@@ -152,8 +152,8 @@ publishing {
 
 if (!project.hasProperty('skip.signing')) {
     signing {
-        def signingKey = findProperty("signingKey")
-        def signingPassphrase = findProperty("signingPassphrase")
+        def signingKey = System.getenv("JAVA_GPG_SECRET_KEY")
+        def signingPassphrase = System.getenv("JAVA_GPG_PASSPHRASE")
         useInMemoryPgpKeys(signingKey, signingPassphrase)
         sign publishing.publications.maven
     }
