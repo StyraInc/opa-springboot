@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'com.styra'
-version = '0.0.2-SNAPSHOT'
+version = '0.0.2'
 
 java {
     sourceCompatibility = '17'
@@ -116,7 +116,7 @@ publishing {
         maven(MavenPublication) {
             groupId = 'com.styra.opa'
             artifactId = 'springboot'
-            version = '0.0.1'
+            version = version
 
             from components.java
 
