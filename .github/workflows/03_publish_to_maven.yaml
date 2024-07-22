@@ -32,8 +32,6 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.ossrh_password }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.java_gpg_secret_key }}
           ORG_GRADLE_PROJECT_signingPassphrase: ${{ secrets.java_gpg_passphrase }}
-          JAVA_GPG_SECRET_KEY: ${{ secrets.java_gpg_secret_key }}
-          JAVA_GPG_PASSPHRASE: ${{ secrets.java_gpg_passphrase }}
       - uses: ravsamhq/notify-slack-action@v2
         if: always() && env.SLACK_WEBHOOK_URL != ''
         with:
