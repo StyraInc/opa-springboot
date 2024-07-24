@@ -27,7 +27,24 @@ trap "rm -rf '$TEMP'" EXIT
 mkdir "$TEMP/javadoc"
 cp -R ./build/docs/javadoc/* "$TEMP/javadoc"
 
+cat <<'EOF' > "$TEMP/index.html"
+<!DOCTYPE HTML>
+<html lang="en-US">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="refresh" content="0; url=./javadoc">
+        <script type="text/javascript">
+            window.location.href = `${window.location.href}/javadoc`
+        </script>
+        <title>Page Redirection</title>
+    </head>
+    <body>
+        <a href='./javadoc'>redirect to OPA-SpringBoot javadoc</a>.
+    </body>
+</html>
+EOF
+
 cd "$TEMP"
 
-cp -R javadoc "$OUTPUT_DIR"
+cp -R * "$OUTPUT_DIR"
 
