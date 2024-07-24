@@ -12,7 +12,7 @@
 > GitHub Actions workflows used for release processes will only run when `CHANGELOG.md` has been modified, and will not run if the first subheading contains `(unreleased)`.
 
 1. Create branch `release-$VERSION`.
-2. Update the version number in `build.gradle`.
+2. Update the version number in `build.gradle` if needed.
 3. Update `CHANGELOG.md` to reflect changes made since the last version.
 4. Create a PR for the release. Merge it once tests pass.
 5. GitHub Actions should automatically update the docs site to reflect the release, and publish a staging repository to Maven Central.
@@ -20,6 +20,7 @@
 7. Tag the release. Tags should follow semver conventions and be formatted as `v$MAJOR.$MINOR.$PATCH`.
 8. Create a GitHub release, copy-paste the relevant section of the changelog into it.
 9. Delete the release branch.
+10. Increment the version number in `build.gradle`, and add a new section to `CHANGELOG.md` for that version with the header `## vX.Y.Z (unreleased)`
 
 ## Toolchain Setup for macOS
 
