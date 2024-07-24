@@ -3,6 +3,7 @@
 ## v0.0.4 (unreleased)
 
 * Explicitly mark the `ContextDataProvider` interface as public.
+* Remove several unused dependencies, update remaining dependencies to latest stable versions.
 
 ## v0.0.3
 

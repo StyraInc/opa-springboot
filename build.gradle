@@ -2,8 +2,8 @@ plugins {
     id 'java'
     id 'maven-publish'
     id 'signing'
-    id 'org.springframework.boot' version '3.3.0'
-    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.springframework.boot' version '3.3.2'
+    id 'io.spring.dependency-management' version '1.1.6'
     id("checkstyle")
 }
 
@@ -27,33 +27,28 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.security:spring-security-web'
-    runtimeOnly 'com.h2database:h2'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation 'org.springframework.security:spring-security-core'
+    implementation 'org.springframework:spring-context'
+
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:+'
+
+    testImplementation 'org.testcontainers:testcontainers-bom:+'
+    testImplementation 'org.testcontainers:testcontainers:+'
+    testImplementation 'org.testcontainers:junit-jupiter:+'
+
+    testImplementation 'org.mockito:mockito-core:+'
+    testImplementation 'org.mockito:mockito-junit-jupiter:+'
 
     implementation group: 'com.styra', name: 'opa', version: '1.4.1'
 
-    runtimeOnly 'org.postgresql:postgresql'
-    implementation 'org.hibernate:hibernate-core:6.5.2.Final'
-    implementation 'org.hibernate:hibernate-entitymanager:5.6.15.Final'
-
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
-    testImplementation 'org.testcontainers:testcontainers-bom:1.19.7'
-    testImplementation 'org.testcontainers:testcontainers:1.19.7'
-    testImplementation 'org.testcontainers:junit-jupiter:1.19.7'
-    testImplementation 'org.mockito:mockito-core:+'
-    testImplementation 'org.mockito:mockito-junit-jupiter:+'
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.17.1'
-    implementation 'org.apache.tomcat.embed:tomcat-embed-core:10.1.24'
+    compileOnly 'org.projectlombok:lombok:1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.17.2'
     implementation 'org.slf4j:slf4j-api:2.0.13'
-    implementation 'org.springframework.security:spring-security-core:6.3.0'
-    implementation 'org.springframework:spring-context:6.1.8'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
 }
 
 apply plugin: 'application'
