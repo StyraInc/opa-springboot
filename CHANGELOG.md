@@ -1,5 +1,7 @@
 # OPA-SpringBoot Changelog
 
+## v0.0.4 (unreleased)
+
 ## v0.0.3
 
 * Add `OPAAuthorizationManager` constructor that accepts a path but not an `OPAClient`.
