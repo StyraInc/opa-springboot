@@ -102,7 +102,6 @@ public class OPAAuthorizationManager
      * OPA URL may be overridden using the OPA_URL environment variable. All
      * OPA requests will be sent to the provided path.
      *
-     * @param opa
      * @param newOpaPath
      */
     public OPAAuthorizationManager(String newOpaPath) {
