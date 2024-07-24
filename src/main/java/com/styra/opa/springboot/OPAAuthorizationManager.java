@@ -98,6 +98,26 @@ public class OPAAuthorizationManager
     }
 
     /**
+     * The authorization manager will internally instantiate an OPA client. The
+     * OPA URL may be overridden using the OPA_URL environment variable. All
+     * OPA requests will be sent to the provided path.
+     *
+     * @param opa
+     * @param newOpaPath
+     */
+    public OPAAuthorizationManager(String newOpaPath) {
+        String opaURL = "http://localhost:8181";
+        String opaURLEnv = System.getenv("OPA_URL");
+        if (opaURLEnv != null) {
+            opaURL = opaURLEnv;
+        }
+        OPAClient opac = new OPAClient(opaURL);
+        this.opa = opac;
+        this.opaPath = newOpaPath;
+        this.reasonKey = "en";
+    }
+
+    /**
      * The authorization manager will be instantiated with a caller-supplied
      * client, requests will be sent to the default path, and the caller
      * provided ContextDataProvider will be used to populate OPA input at
