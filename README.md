@@ -1,9 +1,8 @@
 # OPA-SpringBoot
 
 > [!IMPORTANT]
-> **Under Construction!** This repository is a work in progress. Bear with us while we get things ready for prime time.
+> The documentation for this SDK lives at [https://docs.styra.com/sdk](https://docs.styra.com/sdk), with reference documentation available at [https://styrainc.github.io/opa-springboot/javadoc](https://styrainc.github.io/opa-springboot/javadoc)
 
-TODO: docs links
 
 You can use the Styra OPA-SpringBoot SDK to connect [Open Policy Agent](https://www.openpolicyagent.org/) and [Enterprise OPA](https://www.styra.com/enterprise-opa/) deployments to your [Spring Boot](https://spring.io/projects/spring-boot) applications using the included [AuthorizationManager](https://docs.spring.io/spring-security/reference/servlet/authorization/architecture.html#_the_authorizationmanager) implementation. The policy inputs and outputs follow the [AuthZEN specification](https://openid.github.io/authzen).
 
