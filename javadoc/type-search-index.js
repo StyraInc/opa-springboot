@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"com.styra.opa.springboot","l":"ConstantContextDataProvider"},{"p":"com.styra.opa.springboot","l":"OPAAuthorizationManager"},{"p":"com.styra.opa.springboot","l":"OPAResponse"},{"p":"com.styra.opa.springboot","l":"OPAResponseContext"}];updateSearchResults();
