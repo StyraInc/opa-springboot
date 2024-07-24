@@ -1,5 +1,6 @@
 name: "01 - Run unit tests and lint Java code"
 on:
+  workflow_dispatch:
   pull_request:
 
 jobs:
