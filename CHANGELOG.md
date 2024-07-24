@@ -2,6 +2,8 @@
 
 ## v0.0.4 (unreleased)
 
+* Explicitly mark the `ContextDataProvider` interface as public.
+
 ## v0.0.3
 
 * Add `OPAAuthorizationManager` constructor that accepts a path but not an `OPAClient`.

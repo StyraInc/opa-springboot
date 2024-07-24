@@ -11,7 +11,7 @@ import java.util.function.Supplier;
  * in input.context.data. The returned object must be JSON serializeable.
  */
 @FunctionalInterface
-interface ContextDataProvider {
+public interface ContextDataProvider {
     Object getContextData(
         Supplier<Authentication> authentication,
         RequestAuthorizationContext object
