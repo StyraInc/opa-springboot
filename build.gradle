@@ -116,8 +116,8 @@ publishing {
             from components.java
 
             pom {
-                name = 'Styra Spring Boot SDK'
-                description = 'SDK enabling Spring Boot developers to easily integrate with the Styra API.'
+                name = 'OPA Spring Boot SDK'
+                description = 'The Styra-supported driver to connect Spring Boot applications to Open Policy Agent (OPA) and Enterprise OPA deployments'
                 url = 'https://github.com/styrainc/opa-springboot'
                 scm {
                     url = 'github.com/styrainc/opa-springboot'

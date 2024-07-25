@@ -1,13 +1,12 @@
-# OPA-SpringBoot
+# OPA Spring Boot SDK
 
 > [!IMPORTANT]
 > The documentation for this SDK lives at [https://docs.styra.com/sdk](https://docs.styra.com/sdk), with reference documentation available at [https://styrainc.github.io/opa-springboot/javadoc](https://styrainc.github.io/opa-springboot/javadoc)
 
-
 You can use the Styra OPA-SpringBoot SDK to connect [Open Policy Agent](https://www.openpolicyagent.org/) and [Enterprise OPA](https://www.styra.com/enterprise-opa/) deployments to your [Spring Boot](https://spring.io/projects/spring-boot) applications using the included [AuthorizationManager](https://docs.spring.io/spring-security/reference/servlet/authorization/architecture.html#_the_authorizationmanager) implementation. The policy inputs and outputs follow the [AuthZEN specification](https://openid.github.io/authzen).
 
 > [!IMPORTANT]
-> Would you prefer a plain Java API instead of Spring Boot? Check out [OPA-Java](https://github.com/StyraInc/opa-java).
+> Would you prefer a plain Java API instead of Spring Boot? Check out the [OPA Java SDK](https://github.com/StyraInc/opa-java).
 
 ## SDK Installation
 
@@ -17,18 +16,17 @@ If you wish to build from source and publish the SDK artifact to your local Mave
 
 On Linux/MacOS:
 
-```
+```shell
 ./gradlew publishToMavenLocal -Pskip.signing
 ```
 
 On Windows:
 
-```
+```shell
 gradlew.bat publishToMavenLocal -Pskip.signing
 ```
 
 ## SDK Example Usage (high-level)
-
 
 ```java
 // ... 
@@ -70,36 +68,9 @@ public class SecurityConfig {
 
 ```
 
-## Policy Inputs & Outputs
+## Policy Input/Output Schema
 
-In order to make OPA-SpringBoot compatible with [AuthZEN](https://openid.github.io/authzen), the policy inputs should be structured according to the following table:
-
-| JSON Path                   | Description |
-|-----------------------------|-------------|
-| `input.subject.type`        | Constant string `java_authentication` |
-| `input.subject.id`          | Spring authN [principal](https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/core/Authentication.html#getPrincipal()) |
-| `input.subject.details`     | Spring authN [details](https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/core/Authentication.html#getDetails()) |
-| `input.subject.authorities` | Spring authN [authorities](https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/core/Authentication.html#getAuthorities()) |
-| `input.resource.type`       | Constant string `endpoint` |
-| `input.resource.id`         | Endpoint [servlet path](https://javadoc.io/static/jakarta.servlet/jakarta.servlet-api/5.0.0/jakarta/servlet/http/HttpServletRequest.html#getServletPath--) |
-| `input.action.name`         | HTTP request method |
-| `input.action.protocol`     | HTTP protocol for request |
-| `input.action.headers`      | HTTP headers for request |
-| `input.context.type`        | Constant string `http` |
-| `input.context.host`        | HTTP remote host of request |
-| `input.context.ip`          | HTTP remote IP of request |
-| `input.context.port`        | HTTP remote port for request |
-| `input.context.data`        | Optional supplemental data you can inject using a `ContextDataProvider` implementation |
-
-... and the policy outputs must be structured according to the following table:
-
-| JSON Path           | Description |
-|---------------------|-------------|
-| `output.decision`   | `true` if and only if the request should be allowed to proceed, else `false` |
-| `output.context.id` | AuthZEN [Reason Object](https://openid.github.io/authzen/#name-reason-object) ID |
-| `output.context.reason_admin` | AuthZEN [Reason Field Object](https://openid.github.io/authzen/#reason-field), for administrative use |
-| `output.context.reason_user` | AuthZEN [Reason Field Object](https://openid.github.io/authzen/#reason-field), for user-facing error messages |
-| `output.context.data` | Optional supplemental data provided by your OPA policy |
+Documentation for the required input and output schema of policies used by the OPA Spring Boot SDK can be found [here](https://docs.styra.com/sdk/springboot/reference/input-output-schema)
 
 ## Build Instructions
 
