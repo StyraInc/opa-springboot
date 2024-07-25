@@ -24,7 +24,7 @@ import static java.util.Map.entry;
 
 
 /**
- * This class implements a Spring AuthorizationManager which wraps the OPA-Java
+ * This class implements a Spring AuthorizationManager which wraps the OPA Java
  * SDK (https://github.com/StyraInc/opa-java). OPA inputs are constructed by
  * inspecting the Spring Authentication and RequestAuthorizationContext
  * arguments to check and verify, and are compliant with the AuthZEN spec
