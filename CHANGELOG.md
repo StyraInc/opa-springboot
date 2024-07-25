@@ -1,5 +1,7 @@
 # OPA-SpringBoot Changelog
 
+## v0.0.5 (unreleased)
+
 ## v0.0.4
 
 * Explicitly mark the `ContextDataProvider` interface as public.
