@@ -237,7 +237,7 @@ public class OPAAuthorizationManager
     /**
      * This method can be used to directly call OPA without generating an
      * AuthorizationDecision, which can be used to examine the OPA response.
-     * You should consider using the OPA-Java SDK (which OPA-SpringBoot depends
+     * You should consider using the OPA Java SDK (which the OPA Spring Boot SDK depends
      * on) directly rather than using this method, as it should not be needed
      * during normal use.
      */

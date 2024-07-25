@@ -39,7 +39,7 @@ cat <<'EOF' > "$TEMP/index.html"
         <title>Page Redirection</title>
     </head>
     <body>
-        <a href='./javadoc'>redirect to OPA-SpringBoot javadoc</a>.
+        <a href='./javadoc'>redirect to OPA Spring Boot SDK javadoc</a>.
     </body>
 </html>
 EOF

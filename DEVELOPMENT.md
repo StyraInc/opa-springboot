@@ -1,4 +1,4 @@
-# OPA-SpringBoot Development
+# OPA Spring Boot SDK Development
 
 ## Changelog Conventions
 

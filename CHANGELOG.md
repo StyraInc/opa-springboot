@@ -1,4 +1,4 @@
-# OPA-SpringBoot Changelog
+# OPA Spring Boot SDK Changelog
 
 ## v0.0.5 (unreleased)
 
@@ -18,4 +18,4 @@
 
 ## v0.0.1
 
-* Initial release of OPA-SpringBoot
+* Initial release of the OPA Spring Boot SDK

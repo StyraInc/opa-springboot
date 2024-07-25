@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class models the data to be returned from an OPA-SpringBoot policy
+ * This class models the data to be returned from an OPA Spring Boot SDK policy
  * under the context key.
  *
  * This corresponds to the Context object in the AuthZen spec, see:
