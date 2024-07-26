@@ -58,13 +58,7 @@ public class OPAAuthorizationManager
      * default path defined by the OPA configuration.
      */
     public OPAAuthorizationManager() {
-        String opaURL = "http://localhost:8181";
-        String opaURLEnv = System.getenv("OPA_URL");
-        if (opaURLEnv != null) {
-            opaURL = opaURLEnv;
-        }
-        OPAClient opac = new OPAClient(opaURL);
-        this.opa = opac;
+        this.opa = defaultOPAClient();
         this.opaPath = null;
         this.reasonKey = "en";
     }
@@ -105,13 +99,7 @@ public class OPAAuthorizationManager
      * @param newOpaPath
      */
     public OPAAuthorizationManager(String newOpaPath) {
-        String opaURL = "http://localhost:8181";
-        String opaURLEnv = System.getenv("OPA_URL");
-        if (opaURLEnv != null) {
-            opaURL = opaURLEnv;
-        }
-        OPAClient opac = new OPAClient(opaURL);
-        this.opa = opac;
+        this.opa = defaultOPAClient();
         this.opaPath = newOpaPath;
         this.reasonKey = "en";
     }
@@ -145,6 +133,30 @@ public class OPAAuthorizationManager
         this.opaPath = newOpaPath;
         this.ctxProvider = newProvider;
         this.reasonKey = "en";
+    }
+
+    /**
+     * The authorization manager will instantiate an OPA client internally, but
+     * use a caller-supplied path, and ContextDataProvider.
+     *
+     * @param newOpaPath
+     * @param newProvider
+     */
+    public OPAAuthorizationManager(String newOpaPath, ContextDataProvider newProvider) {
+        this.opa = defaultOPAClient();
+        this.opaPath = newOpaPath;
+        this.ctxProvider = newProvider;
+        this.reasonKey = "en";
+    }
+
+    private static OPAClient defaultOPAClient() {
+        String opaURL = "http://localhost:8181";
+        String opaURLEnv = System.getenv("OPA_URL");
+        if (opaURLEnv != null) {
+            opaURL = opaURLEnv;
+        }
+        OPAClient opac = new OPAClient(opaURL);
+        return opac;
     }
 
     public String getReasonKey() {
