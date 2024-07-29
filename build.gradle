@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'java-library'
     id 'maven-publish'
     id 'signing'
     id 'org.springframework.boot' version '3.3.2'
@@ -43,7 +44,7 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:+'
     testImplementation 'org.mockito:mockito-junit-jupiter:+'
 
-    implementation group: 'com.styra', name: 'opa', version: '1.4.1'
+    api group: 'com.styra', name: 'opa', version: '1.4.1'
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'

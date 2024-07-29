@@ -3,6 +3,7 @@
 ## v0.0.5 (unreleased)
 
 * Add `OPAAuthorizationManager` constructor that accepts a path and a `ContextDataProvider`, but not an `OPAClient`.
+* `opa-java` is now marked as an `api` dependency in `build.gradle`, so it will not be transitively exposed to users.
 
 ## v0.0.4
 
