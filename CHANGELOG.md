@@ -1,5 +1,7 @@
 # OPA Spring Boot SDK Changelog
 
+## v0.0.6 (unreleased)
+
 ## v0.0.5
 
 * Add `OPAAuthorizationManager` constructor that accepts a path and a `ContextDataProvider`, but not an `OPAClient`.
