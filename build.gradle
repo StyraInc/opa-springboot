@@ -27,6 +27,13 @@ repositories {
     mavenCentral()
 }
 
+javadoc {
+    options.links += [
+        "https://styrainc.github.io/opa-java/javadoc/",
+        "https://docs.spring.io/spring-security/site/docs/current/api/",
+    ]
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.security:spring-security-web'

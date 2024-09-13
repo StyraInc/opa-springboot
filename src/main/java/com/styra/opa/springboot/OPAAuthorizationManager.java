@@ -291,7 +291,8 @@ public class OPAAuthorizationManager
             );
             return new AuthorizationDecision(false);
         }
-        return new AuthorizationDecision(resp.getDecision());
+        //return new AuthorizationDecision(resp.getDecision());
+        return new OPAAuthorizationDecision(resp);
     }
 
     public void verify(
@@ -316,6 +317,6 @@ public class OPAAuthorizationManager
             return;
         }
 
-        throw new AccessDeniedException(reason);
+        throw new OPAAccessDeniedException(resp, reason);
     }
 }

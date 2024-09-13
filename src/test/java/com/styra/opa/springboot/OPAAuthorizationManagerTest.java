@@ -43,6 +43,7 @@ import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -272,6 +273,24 @@ class OPAAuthorizationManagerTest {
             new OPAAuthorizationManager(opa, "policy/decision_always_true");
         AuthorizationDecision actual = am.check(this.authenticationSupplier, this.context);
         assertEquals(actual.isGranted(), true);
+    }
+
+    @Test
+    public void testOPAAuthorizationManagerDecisionCast() {
+        // Make sure that we can cast an AuthorizationDecision back to an
+        // OPAAuthorizationDecision and access the context.
+
+        Authentication mockAuth = this.createMockAuthentication();
+        when(authenticationSupplier.get()).thenReturn(mockAuth);
+        OPAClient opa = new OPAClient(address, headers);
+        AuthorizationManager<RequestAuthorizationContext> am =
+            new OPAAuthorizationManager(opa, "policy/echo");
+        AuthorizationDecision actual = am.check(this.authenticationSupplier, this.context);
+        assertEquals(actual.isGranted(), true);
+
+        assertTrue(actual instanceof OPAAuthorizationDecision);
+        OPAAuthorizationDecision opaActual = (OPAAuthorizationDecision) actual;
+        assertEquals(opaActual.getOPAResponse().getReasonForDecision("en"), "echo rule always allows");
 
     }
 
@@ -315,7 +334,7 @@ class OPAAuthorizationManagerTest {
         AuthorizationManager<RequestAuthorizationContext> am =
             new OPAAuthorizationManager(opa, "policy/decision_always_false");
 
-        assertThrows(AccessDeniedException.class, () -> {
+        assertThrows(OPAAccessDeniedException.class, () -> {
             am.verify(this.authenticationSupplier, this.context);
         });
 
