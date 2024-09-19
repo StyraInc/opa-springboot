@@ -2,6 +2,8 @@
 
 ## v0.0.6 (unreleased)
 
+* Fixed a null pointer exception while constructing the input to OPA with some Authentication implementations.
+
 ## v0.0.5
 
 * Add `OPAAuthorizationManager` constructor that accepts a path and a `ContextDataProvider`, but not an `OPAClient`.
