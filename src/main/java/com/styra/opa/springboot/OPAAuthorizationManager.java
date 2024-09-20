@@ -175,14 +175,31 @@ public class OPAAuthorizationManager
         this.reasonKey = newReasonKey;
     }
 
+    /**
+     * If v is null, this function is a NO-OP, otherwise, it calls m.put(k, v).
+     *
+     * @return
+     */
+    private void nullablePut(Map<String, Object> m, String k, Object v) {
+        if (v == null) {
+            return;
+        }
+
+        m.put(k, v);
+    }
+
     private Map<String, Object> makeRequestInput(
         Supplier<Authentication> authentication,
         RequestAuthorizationContext object
     ) {
-        Object subjectId = authentication.get().getPrincipal();
-        Object subjectDetails = authentication.get().getDetails();
-        Collection<? extends GrantedAuthority> subjectAuthorities =
-            authentication.get().getAuthorities();
+        Object subjectId = null;
+        Object subjectDetails = null;
+        Collection<? extends GrantedAuthority> subjectAuthorities = null;
+        if (authentication.get() != null) {
+            subjectId = authentication.get().getPrincipal();
+            subjectDetails = authentication.get().getDetails();
+            subjectAuthorities = authentication.get().getAuthorities();
+        }
 
         HttpServletRequest request = object.getRequest();
         String resourceId = request.getServletPath();
@@ -190,7 +207,7 @@ public class OPAAuthorizationManager
         String actionName = request.getMethod();
         String actionProtocol = request.getProtocol();
         Enumeration<String> headerNamesEnumeration = request.getHeaderNames();
-        HashMap<String, String> headers = new HashMap<String, String>();
+        Map<String, String> headers = new HashMap<String, String>();
         while (headerNamesEnumeration.hasMoreElements()) {
             String headerName = headerNamesEnumeration.nextElement();
             String headerValue = request.getHeader(headerName);
@@ -204,11 +221,17 @@ public class OPAAuthorizationManager
         String contextRemoteHost = request.getRemoteHost();
         Integer contextRemotePort = request.getRemotePort();
 
-        HashMap<String, Object> ctx = new HashMap<String, Object>();
-        ctx.put("type", RequestContextType);
-        ctx.put("host", contextRemoteHost);
-        ctx.put("ip", contextRemoteAddr);
-        ctx.put("port", contextRemotePort);
+        Map<String, Object> ctx = new HashMap<String, Object>();
+        nullablePut(ctx, "type", RequestContextType);
+        nullablePut(ctx, "host", contextRemoteHost);
+        nullablePut(ctx, "ip", contextRemoteAddr);
+        nullablePut(ctx, "port", contextRemotePort);
+
+        Map<String, Object> subjectInfo = new HashMap<String, Object>();
+        nullablePut(subjectInfo, "type", SubjectType);
+        nullablePut(subjectInfo, "id", subjectId);
+        nullablePut(subjectInfo, "details", subjectDetails);
+        nullablePut(subjectInfo, "authorities", subjectAuthorities);
 
         if (this.ctxProvider != null) {
             Object contextData = this.ctxProvider.getContextData(authentication, object);
@@ -216,15 +239,7 @@ public class OPAAuthorizationManager
         }
 
         java.util.Map<String, Object> iMap = java.util.Map.ofEntries(
-            entry(
-                "subject",
-                java.util.Map.ofEntries(
-                    entry("type", SubjectType),
-                    entry("id", subjectId),
-                    entry("details", subjectDetails),
-                    entry("authorities", subjectAuthorities)
-                )
-            ),
+            entry("subject", subjectInfo),
             entry(
                 "resource",
                 java.util.Map.ofEntries(

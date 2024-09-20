@@ -114,6 +114,30 @@ class OPAAuthorizationManagerTest {
         return mockAuth;
     }
 
+    /**
+     * This is used to create a mock auth object where most of the fields are
+     * null, to suss out exceptions when optional fields are omitted.
+     *
+     * @return
+     */
+    private Authentication createNullMockAuthentication() {
+        Authentication mockAuth = mock(Authentication.class);
+        when(mockAuth.getPrincipal()).thenReturn("testuser");
+        when(mockAuth.getCredentials()).thenReturn(null);
+
+        WebAuthenticationDetails details = new WebAuthenticationDetails(httpServletRequest);
+        when(mockAuth.getDetails()).thenReturn(null);
+
+        GrantedAuthority authority1 = new SimpleGrantedAuthority("ROLE_USER");
+        GrantedAuthority authority2 = new SimpleGrantedAuthority("ROLE_ADMIN");
+        Collection<? extends GrantedAuthority> authorities = Arrays.asList(authority1, authority2);
+        doReturn(null).when(mockAuth).getAuthorities();
+
+        when(mockAuth.isAuthenticated()).thenReturn(true);
+
+        return mockAuth;
+    }
+
     // Convert the value to JSON and then retrieve the value at the specified
     // path.
     //
@@ -377,6 +401,80 @@ class OPAAuthorizationManagerTest {
             entry("hello", "world")
         ));
         Authentication mockAuth = this.createMockAuthentication();
+        when(authenticationSupplier.get()).thenReturn(mockAuth);
+        OPAClient opa = new OPAClient(address, headers);
+        OPAAuthorizationManager am = new OPAAuthorizationManager(opa, "policy/echo", prov);
+        OPAResponse actual = am.opaRequest(this.authenticationSupplier, this.context);
+
+        assertEquals(expect.getDecision(), actual.getDecision());
+        assertEquals(expect.getContext().getId(), actual.getContext().getId());
+        assertEquals(expect.getContext().getReasonUser(), actual.getContext().getReasonUser());
+
+        List<String> datadiff = jsonDiff(expect.getContext().getData(), actual.getContext().getData());
+
+        System.out.printf("#### expected context data\n%s\n", jsonPretty(expectData));
+        System.out.printf("#### actual context data\n%s\n", jsonPretty(actual.getContext().getData()));
+
+        for (int i = 0; i < datadiff.size(); i++) {
+            System.out.printf("diff mismatch: %s\n", datadiff.get(i));
+        }
+
+        assertEquals(0, datadiff.size());
+
+        assertEquals("echo rule always allows", actual.getReasonForDecision("en"));
+        assertEquals("other reason key", actual.getReasonForDecision("other"));
+        assertEquals("echo rule always allows", actual.getReasonForDecision("nonexistant"));
+
+    }
+
+    @Test
+    public void testOPAAuthorizationManagerNullMetadata() {
+        // By reading back the input, we can make sure the OPA input has the
+        // right structure and content.
+
+        Map<String, Object> expectData = Map.ofEntries(
+                entry("action", Map.ofEntries(
+                    entry("headers", Map.ofEntries(
+                        entry("UnitTestHeader", "123abc")
+                    )),
+                    entry("name", "GET"),
+                    entry("protocol", "HTTP/1.1")
+                )),
+                entry("context", Map.ofEntries(
+                    entry("host", "example.com"),
+                    entry("ip", "192.0.2.123"),
+                    entry("port", 0),
+                    entry("type", "http"),
+                    entry("data", Map.ofEntries(
+                        entry("hello", "world")
+                    ))
+                )),
+                entry("resource", Map.ofEntries(
+                    entry("id", "unit/test"),
+                    entry("type", "endpoint")
+                )),
+                entry("subject", Map.ofEntries(
+                    entry("id", "testuser"),
+                    entry("type", "java_authentication")
+                ))
+        );
+
+        OPAResponseContext expectCtx = new OPAResponseContext();
+        expectCtx.setReasonUser(Map.ofEntries(
+            entry("en", "echo rule always allows"),
+            entry("other", "other reason key")
+        ));
+        expectCtx.setId("0");
+        expectCtx.setData(expectData);
+
+        OPAResponse expect = new OPAResponse();
+        expect.setDecision(true);
+        expect.setContext(expectCtx);
+
+        ContextDataProvider prov = new ConstantContextDataProvider(java.util.Map.ofEntries(
+            entry("hello", "world")
+        ));
+        Authentication mockAuth = this.createNullMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
         OPAClient opa = new OPAClient(address, headers);
         OPAAuthorizationManager am = new OPAAuthorizationManager(opa, "policy/echo", prov);
