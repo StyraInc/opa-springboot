@@ -1,5 +1,7 @@
 # OPA Spring Boot SDK Changelog
 
+## v0.0.7 (unreleased)
+
 ## v0.0.6
 
 * Fixed a null pointer exception while constructing the input to OPA with some Authentication implementations.
