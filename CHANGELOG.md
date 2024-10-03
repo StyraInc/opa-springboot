@@ -1,5 +1,7 @@
 # OPA Spring Boot SDK Changelog
 
+## v0.0.8 (unreleased)
+
 ## v0.0.7
 
 * Bump `opa-java` version to 1.8.0.
