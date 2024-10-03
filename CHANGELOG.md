@@ -2,6 +2,8 @@
 
 ## v0.0.7 (unreleased)
 
+* Bump `opa-java` version to 1.8.0.
+
 ## v0.0.6
 
 * Fixed a null pointer exception while constructing the input to OPA with some Authentication implementations.
