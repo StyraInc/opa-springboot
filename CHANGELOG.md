@@ -1,6 +1,10 @@
 # OPA Spring Boot SDK Changelog
 
-## v0.0.8 (unreleased)
+## v0.0.8
+
+* Change `build.gradle` to omit the `plain` classifier from the jar file it builds. This should make the default
+  snippet show on https://central.sonatype.com/artifact/com.styra.opa/springboot _work as is_. Before, you would
+  have to add `<classifier>plain</classifier>`.
 
 ## v0.0.7
 
