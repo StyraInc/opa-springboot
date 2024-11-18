@@ -9,6 +9,5 @@ set -e
 set -u
 
 if ! awk '$1 == "##" && $0 ~ /unreleased/ {exit(1)}' < CHANGELOG.md ; then
-	echo "repository contains unreleased changes" 1>&2
-	exit 1
+	echo 'release=true'
 fi
