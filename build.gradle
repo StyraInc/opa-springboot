@@ -3,7 +3,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'signing'
-    id 'org.springframework.boot' version '3.3.2'
+    id 'org.springframework.boot' version '3.3.5'
     id 'io.spring.dependency-management' version '1.1.6'
     id("checkstyle")
 }
@@ -14,13 +14,20 @@ version = '0.0.8'
 java {
     sourceCompatibility = '17'
     targetCompatibility = '17'
-
 }
 
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+}
+
+tasks.named("bootJar") {
+    archiveClassifier = 'boot'
+}
+
+tasks.named("jar") {
+    archiveClassifier = ''
 }
 
 repositories {
