@@ -5,9 +5,6 @@
 # release related activities in GitHub Actions.
 
 cd "$(dirname "$0")/.."
-set -e
-set -u
 
-if ! awk '$1 == "##" && $0 ~ /unreleased/ {exit(1)}' < CHANGELOG.md ; then
-	echo 'release=true'
-fi
+# match '## 0.0.9 (unreleased)'
+awk '$1 == "##" && $0 ~ /unreleased/ { r=1 } END { print (r==1 ? "release=false" : "release=true") }' < CHANGELOG.md
