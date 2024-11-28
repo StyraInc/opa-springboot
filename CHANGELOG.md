@@ -1,8 +1,5 @@
 # OPA Spring Boot SDK Changelog
 
-## v0.0.9 (unreleased)
-
-
 ## v0.0.8
 
 * Change `build.gradle` to omit the `plain` classifier from the jar file it builds. This should make the default
