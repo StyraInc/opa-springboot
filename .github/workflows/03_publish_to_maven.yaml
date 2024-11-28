@@ -37,7 +37,7 @@ jobs:
           ORG_GRADLE_PROJECT_signingPassphrase: ${{ secrets.java_gpg_passphrase }}
         if: ${{ steps.build.outputs.release  == 'true' }}
       - uses: ravsamhq/notify-slack-action@v2
-        if: always() && env.SLACK_WEBHOOK_URL != ''
+        if: ${{ steps.build.outputs.release  == 'true' && always() && env.SLACK_WEBHOOK_URL != '' }}
         with:
           status: ${{ job.status }}
           token: ${{ secrets.github_access_token }}
@@ -47,4 +47,3 @@ jobs:
           footer: "Linked Repo <{repo_url}|{repo}> | <{run_url}|View Run>"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: ${{ steps.build.outputs.release  == 'true' }}
