@@ -38,18 +38,11 @@ public class OPAAuthorizationManager
         OPAAuthorizationManager.class
     );
 
-    private static final String SubjectType = "java_authentication";
-    private static final String RequestResourceType = "endpoint";
-    private static final String RequestContextType = "http";
-
-    // If opaPath is null, then we assume the user wants to use the default path.
-    private String opaPath;
-
-    private String reasonKey;
-
     private ContextDataProvider ctxProvider;
 
     private OPAClient opa;
+
+    private OpaProperties opaProperties;
 
     /**
      * The authorization manager will internally instantiate an OPAClient
@@ -58,9 +51,7 @@ public class OPAAuthorizationManager
      * default path defined by the OPA configuration.
      */
     public OPAAuthorizationManager() {
-        this.opa = defaultOPAClient();
-        this.opaPath = null;
-        this.reasonKey = "en";
+        this(null, null, null);
     }
 
     /**
@@ -71,9 +62,7 @@ public class OPAAuthorizationManager
      * @param opa
      */
     public OPAAuthorizationManager(OPAClient opa) {
-        this.opa = opa;
-        this.opaPath = null;
-        this.reasonKey = "en";
+        this(opa, null, null);
     }
 
     /**
@@ -86,9 +75,7 @@ public class OPAAuthorizationManager
      * @param newOpaPath
      */
     public OPAAuthorizationManager(OPAClient opa, String newOpaPath) {
-        this.opa = opa;
-        this.opaPath = newOpaPath;
-        this.reasonKey = "en";
+        this(opa, newOpaPath, null);
     }
 
     /**
@@ -99,9 +86,7 @@ public class OPAAuthorizationManager
      * @param newOpaPath
      */
     public OPAAuthorizationManager(String newOpaPath) {
-        this.opa = defaultOPAClient();
-        this.opaPath = newOpaPath;
-        this.reasonKey = "en";
+        this(null, newOpaPath, null);
     }
 
     /**
@@ -114,9 +99,7 @@ public class OPAAuthorizationManager
      * @param newProvider
      */
     public OPAAuthorizationManager(OPAClient opa, ContextDataProvider newProvider) {
-        this.opa = opa;
-        this.ctxProvider = newProvider;
-        this.reasonKey = "en";
+        this(opa, null, newProvider);
     }
 
     /**
@@ -129,10 +112,10 @@ public class OPAAuthorizationManager
      * @param newProvider
      */
     public OPAAuthorizationManager(OPAClient opa, String newOpaPath, ContextDataProvider newProvider) {
-        this.opa = opa;
-        this.opaPath = newOpaPath;
+        // If newOpaPath is null, then we assume the user wants to use the default path.
+        this.opaProperties = OpaProperties.builder().path(newOpaPath).build();
+        this.opa = opa != null ? opa : defaultOPAClient();
         this.ctxProvider = newProvider;
-        this.reasonKey = "en";
     }
 
     /**
@@ -143,10 +126,7 @@ public class OPAAuthorizationManager
      * @param newProvider
      */
     public OPAAuthorizationManager(String newOpaPath, ContextDataProvider newProvider) {
-        this.opa = defaultOPAClient();
-        this.opaPath = newOpaPath;
-        this.ctxProvider = newProvider;
-        this.reasonKey = "en";
+        this(null, newOpaPath, newProvider);
     }
 
     private static OPAClient defaultOPAClient() {
@@ -160,7 +140,7 @@ public class OPAAuthorizationManager
     }
 
     public String getReasonKey() {
-        return this.reasonKey;
+        return opaProperties.getReasonKey();
     }
 
     /**
@@ -172,7 +152,7 @@ public class OPAAuthorizationManager
      * @param newReasonKey
      */
     public void setReasonKey(String newReasonKey) {
-        this.reasonKey = newReasonKey;
+        opaProperties.setReasonKey(newReasonKey);
     }
 
     /**
@@ -222,13 +202,13 @@ public class OPAAuthorizationManager
         Integer contextRemotePort = request.getRemotePort();
 
         Map<String, Object> ctx = new HashMap<String, Object>();
-        nullablePut(ctx, "type", RequestContextType);
+        nullablePut(ctx, "type", opaProperties.getRequest().getContext().getType());
         nullablePut(ctx, "host", contextRemoteHost);
         nullablePut(ctx, "ip", contextRemoteAddr);
         nullablePut(ctx, "port", contextRemotePort);
 
         Map<String, Object> subjectInfo = new HashMap<String, Object>();
-        nullablePut(subjectInfo, "type", SubjectType);
+        nullablePut(subjectInfo, "type", opaProperties.getRequest().getSubject().getType());
         nullablePut(subjectInfo, "id", subjectId);
         nullablePut(subjectInfo, "details", subjectDetails);
         nullablePut(subjectInfo, "authorities", subjectAuthorities);
@@ -243,7 +223,7 @@ public class OPAAuthorizationManager
             entry(
                 "resource",
                 java.util.Map.ofEntries(
-                    entry("type", RequestResourceType),
+                    entry("type", opaProperties.getRequest().getResource().getType()),
                     entry("id", resourceId)
                 )
             ),
@@ -276,10 +256,10 @@ public class OPAAuthorizationManager
         logger.trace("OPA input for request: {}", iMap);
         OPAResponse resp = null;
         try {
-            if (this.opaPath != null) {
-                logger.trace("OPA path is {}", this.opaPath);
+            if (opaProperties.getPath() != null) {
+                logger.trace("OPA path is {}", opaProperties.getPath());
                 resp = opa.evaluate(
-                    this.opaPath,
+                        opaProperties.getPath(),
                     iMap,
                     new TypeReference<OPAResponse>() {}
                 );
@@ -319,7 +299,7 @@ public class OPAAuthorizationManager
         }
 
         boolean allow = resp.getDecision();
-        String reason = resp.getReasonForDecision(this.reasonKey);
+        String reason = resp.getReasonForDecision(opaProperties.getReasonKey());
         if (reason == null) {
             reason = "access denied by policy";
         }

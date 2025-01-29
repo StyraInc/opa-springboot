@@ -100,11 +100,26 @@ task lint {
 
 test {
     useJUnitPlatform()
+    exclude 'com/styra/opa/springboot/properties/ModifiedSystemEnvPropertiesTest.class'
     testLogging {
         // uncomment for more verbose output during development
         //events "passed", "skipped", "failed", "standard_out", "standard_error"
     }
 }
+tasks.register("testModifiedSystemEnvProperties", Test) {
+    useJUnitPlatform()
+    group = "verification"
+    include 'com/styra/opa/springboot/properties/ModifiedSystemEnvPropertiesTest.class'
+    doFirst {
+        systemProperty 'opa.url', 'http://localhost:8183'
+        environment 'OPA_PATH', '/tickets/main2'
+    }
+    doLast {
+        systemProperties.remove('opa.url')
+        environment.remove('OPA_PATH')
+    }
+}
+test.finalizedBy(testModifiedSystemEnvProperties)
 
 gradle.projectsEvaluated {
     tasks.withType(JavaCompile) {
