@@ -42,7 +42,7 @@ public class OPAAuthorizationManager
 
     private OPAClient opa;
 
-    private OpaProperties opaProperties;
+    private OPAProperties opaProperties;
 
     /**
      * The authorization manager will internally instantiate an OPAClient
@@ -113,8 +113,9 @@ public class OPAAuthorizationManager
      */
     public OPAAuthorizationManager(OPAClient opa, String newOpaPath, ContextDataProvider newProvider) {
         // If newOpaPath is null, then we assume the user wants to use the default path.
-        this.opaProperties = OpaProperties.builder().path(newOpaPath).build();
-        this.opa = opa != null ? opa : defaultOPAClient();
+        opaProperties = new OPAProperties();
+        opaProperties.setPath(newOpaPath);
+        this.opa = opa != null ? opa : defaultOPAClient(opaProperties);
         this.ctxProvider = newProvider;
     }
 
@@ -129,8 +130,8 @@ public class OPAAuthorizationManager
         this(null, newOpaPath, newProvider);
     }
 
-    private static OPAClient defaultOPAClient() {
-        String opaURL = "http://localhost:8181";
+    private static OPAClient defaultOPAClient(OPAProperties opaProperties) {
+        String opaURL = opaProperties.getUrl();
         String opaURLEnv = System.getenv("OPA_URL");
         if (opaURLEnv != null) {
             opaURL = opaURLEnv;
