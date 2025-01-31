@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
@@ -19,6 +20,7 @@ import org.springframework.security.web.access.intercept.RequestAuthorizationCon
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -93,7 +95,8 @@ class OPAAuthorizationManagerTest {
         )
         .withExposedPorts(opaPort, altPort)
         .withFileSystemBind("./testdata/simple", "/policy", BindMode.READ_ONLY)
-        .withCommand("run -s --authentication=token --authorization=basic --bundle /policy");
+        .withCommand("run -s --authentication=token --authorization=basic --bundle /policy")
+        .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(OPAAuthorizationManagerTest.class)));
     //CHECKSTYLE:ON
 
     private Authentication createMockAuthentication() {

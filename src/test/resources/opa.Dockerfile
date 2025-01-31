@@ -8,7 +8,7 @@ ADD entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh
 
-COPY --from=openpolicyagent/opa:latest-static /opa /usr/bin/opa
+COPY --from=openpolicyagent/opa:0.70.0-static /opa /usr/bin/opa
 
 ENTRYPOINT ["/entrypoint.sh"]
 
