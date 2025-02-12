@@ -4,8 +4,8 @@ package system
 
 msg := "this is the default path"
 
-main := x {
+main := x if {
     x := {"msg": msg, "echo": input}
-} else {
+} else if {
     x := {"msg": msg}
 }

@@ -52,14 +52,10 @@ dependencies {
     implementation 'org.springframework:spring-context'
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:+'
 
-    testImplementation 'org.testcontainers:testcontainers-bom:+'
-    testImplementation 'org.testcontainers:testcontainers:+'
-    testImplementation 'org.testcontainers:junit-jupiter:+'
-
-    testImplementation 'org.mockito:mockito-core:+'
-    testImplementation 'org.mockito:mockito-junit-jupiter:+'
+    testImplementation 'org.testcontainers:testcontainers-bom:1.19.8'
+    testImplementation 'org.testcontainers:testcontainers:1.19.8'
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.8'
 
     api group: 'com.styra', name: 'opa', version: '1.8.0'
 
@@ -100,11 +96,26 @@ task lint {
 
 test {
     useJUnitPlatform()
+    exclude 'com/styra/opa/springboot/properties/ModifiedSystemEnvOPAPropertiesTest.class'
     testLogging {
         // uncomment for more verbose output during development
         //events "passed", "skipped", "failed", "standard_out", "standard_error"
     }
 }
+tasks.register("testModifiedSystemEnvProperties", Test) {
+    useJUnitPlatform()
+    group = "verification"
+    include 'com/styra/opa/springboot/properties/ModifiedSystemEnvOPAPropertiesTest.class'
+    doFirst {
+        systemProperty 'opa.url', 'http://localhost:8183'
+        environment 'OPA_PATH', 'tickets/main2'
+    }
+    doLast {
+        systemProperties.remove('opa.url')
+        environment.remove('OPA_PATH')
+    }
+}
+test.finalizedBy(testModifiedSystemEnvProperties)
 
 gradle.projectsEvaluated {
     tasks.withType(JavaCompile) {
