@@ -95,7 +95,7 @@ class OPAAuthorizationManagerTest {
         )
         .withExposedPorts(opaPort, altPort)
         .withFileSystemBind("./testdata/simple", "/policy", BindMode.READ_ONLY)
-        .withCommand("run -s --authentication=token --authorization=basic --bundle /policy")
+        .withCommand("run -s --authentication=token --authorization=basic --bundle /policy --addr=0.0.0.0:" + opaPort)
         .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(OPAAuthorizationManagerTest.class)));
     //CHECKSTYLE:ON
 

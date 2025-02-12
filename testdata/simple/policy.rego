@@ -1,5 +1,7 @@
 package policy
 
+import rego.v1
+
 echo := {
     "decision": true,
     "context": {
