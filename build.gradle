@@ -38,9 +38,11 @@ repositories {
 }
 
 javadoc {
+    options.addBooleanOption("Xdoclint:-missing", true)
     options.links += [
         "https://styrainc.github.io/opa-java/javadoc/",
         "https://docs.spring.io/spring-security/site/docs/current/api/",
+        "https://docs.spring.io/spring-boot/api/java/",
     ]
 }
 
@@ -96,7 +98,7 @@ task lint {
 
 test {
     useJUnitPlatform()
-    exclude 'com/styra/opa/springboot/properties/ModifiedSystemEnvOPAPropertiesTest.class'
+    exclude 'com/styra/opa/springboot/autoconfigure/properties/ModifiedSystemEnvOPAPropertiesTest.class'
     testLogging {
         // uncomment for more verbose output during development
         //events "passed", "skipped", "failed", "standard_out", "standard_error"
@@ -105,10 +107,10 @@ test {
 tasks.register("testModifiedSystemEnvProperties", Test) {
     useJUnitPlatform()
     group = "verification"
-    include 'com/styra/opa/springboot/properties/ModifiedSystemEnvOPAPropertiesTest.class'
+    include 'com/styra/opa/springboot/autoconfigure/properties/ModifiedSystemEnvOPAPropertiesTest.class'
     doFirst {
         systemProperty 'opa.url', 'http://localhost:8183'
-        environment 'OPA_PATH', 'tickets/main2'
+        environment 'OPA_PATH', 'foo/bar2'
     }
     doLast {
         systemProperties.remove('opa.url')

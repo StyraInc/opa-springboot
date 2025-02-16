@@ -10,7 +10,7 @@ You can use the Styra OPA Spring Boot SDK to connect [Open Policy Agent](https:/
 
 ## SDK Installation
 
-This package is published on Maven Central as [`com.styra.opa/springboot`](https://central.sonatype.com/artifact/com.styra.opa/springboot). The Maven Central page includes up-to-date instructions to add it as a dependency to your Java project, tailored to a variety of build systems including Maven and Gradle.
+This package is published on Maven Central as [`com.styra.opa:springboot`](https://central.sonatype.com/artifact/com.styra.opa/springboot). The Maven Central page includes up-to-date instructions to add it as a dependency to your Java project, tailored to a variety of build systems including Maven and Gradle.
 
 If you wish to build from source and publish the SDK artifact to your local Maven repository (on your filesystem) then use the following command (after cloning the git repo locally):
 
@@ -23,10 +23,12 @@ On Linux/MacOS:
 On Windows:
 
 ```shell
-gradlew.bat publishToMavenLocal -Pskip.signing
+gradlew.bat publishToMavenLocal -"Pskip.signing"
 ```
 
 ## SDK Example Usage (high-level)
+
+Using `OPAAuthorizationManager`, HTTP requests could be authorized:
 
 ```java
 // ... 
@@ -39,38 +41,44 @@ import com.styra.opa.OPAClient;
 public class SecurityConfig {
 
     @Autowired
-    TicketRepository ticketRepository;
-
-    @Autowired
-    TenantRepository tenantRepository;
-
-    @Autowired
-    CustomerRepository customerRepository;
+    OPAAuthorizationManager opaAuthorizationManager;
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
-        String opaURL = "http://localhost:8181";
-        String opaURLEnv = System.getenv("OPA_URL");
-        if (opaURLEnv != null) {
-            opaURL = opaURLEnv;
-        }
-        OPAClient opa = new OPAClient(opaURL);
-
-        AuthorizationManager<RequestAuthorizationContext> am = new OPAAuthorizationManager(opa, "tickets/spring/main");
-
-        http.authorizeHttpRequests(authorize -> authorize.anyRequest().access(am));
-
+        http.authorizeHttpRequests(authorize -> authorize.anyRequest().access(opaAuthorizationManager));
+        // Other security configs
         return http.build();
     }
 
 }
+```
+Auto-configuration will be done using `OPAAutoConfiguration`. If any customization would be needed, custom `OPAClient`
+or `OPAAuthorizationManager` beans could be defined.
 
+Configuration properties are defined in `OPAProperties` and can be set
+[externally](https://docs.spring.io/spring-boot/reference/features/external-config.html), e.g. via
+`application.properties`, `application.yaml`, system properties, or environment variables.
+
+Example `application.yaml` to modify properties:
+```yaml
+opa:
+    url: http://localhost:8182 # OPA server URL. Default is "http://localhost:8181".
+    path: foo/bar # Policy path in OPA. Default is null.
+    request:
+        resource:
+            type: stomp_endpoint # Type of the request's resource. Default is "endpoint".
+        context:
+            type: websocket # Type of the request's context. Default is "http".
+        subject:
+            type: oauth2_resource_owner # Type of the request's subject. Default is "java_authentication".
+    response:
+        context:
+            reason-key: de # Key to search for decision reasons in the response. Default is "en".
 ```
 
 ## Policy Input/Output Schema
 
-Documentation for the required input and output schema of policies used by the OPA Spring Boot SDK can be found [here](https://docs.styra.com/sdk/springboot/reference/input-output-schema)
+Documentation for the required input and output schema of policies used by the OPA Spring Boot SDK can be found [here](https://docs.styra.com/sdk/springboot/reference/input-output-schema).
 
 ## Build Instructions
 
@@ -80,7 +88,7 @@ Documentation for the required input and output schema of policies used by the O
 
 **To run the unit tests**, you can use `./gradlew test`.
 
-**To run the linter**, you can use `./gradlew lint`
+**To run the linter**, you can use `./gradlew lint`.
 
 ## Community
 

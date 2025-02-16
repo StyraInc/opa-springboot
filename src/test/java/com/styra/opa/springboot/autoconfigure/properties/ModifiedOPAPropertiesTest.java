@@ -1,6 +1,6 @@
-package com.styra.opa.springboot.properties;
+package com.styra.opa.springboot.autoconfigure.properties;
 
-import com.styra.opa.springboot.OPAProperties;
+import com.styra.opa.springboot.autoconfigure.OPAProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,13 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @TestPropertySource(properties = {
     "opa.url=http://localhost:8182",
-    "opa.path=tickets/main",
-    "opa.reason-key=de",
+    "opa.path=foo/bar",
     "opa.request.resource.type=stomp_endpoint",
     "opa.request.context.type=websocket",
-    "opa.request.subject.type=oauth2_resource_owner"
+    "opa.request.subject.type=oauth2_resource_owner",
+    "opa.response.context.reason-key=de",
 })
-@EnableConfigurationProperties(value = OPAProperties.class)
+@EnableConfigurationProperties(OPAProperties.class)
 @ExtendWith(SpringExtension.class)
 public class ModifiedOPAPropertiesTest {
 
@@ -28,11 +28,11 @@ public class ModifiedOPAPropertiesTest {
     @Test
     public void test() {
         assertEquals("http://localhost:8182", opaProperties.getUrl());
-        assertEquals("tickets/main", opaProperties.getPath());
-        assertEquals("de", opaProperties.getReasonKey());
+        assertEquals("foo/bar", opaProperties.getPath());
         assertEquals("stomp_endpoint", opaProperties.getRequest().getResource().getType());
         assertEquals("websocket", opaProperties.getRequest().getContext().getType());
         assertEquals("oauth2_resource_owner", opaProperties.getRequest().getSubject().getType());
+        assertEquals("de", opaProperties.getResponse().getContext().getReasonKey());
     }
 }
 
