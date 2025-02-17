@@ -29,7 +29,7 @@ public class OPAAutoConfigurationTest {
         private OPAAuthorizationManager opaAuthorizationManager;
 
         @Test
-        public void test() {
+        public void testDefaultBeansExistence() {
             assertNotNull(opaProperties);
             assertNotNull(opaClient);
             assertNotNull(opaAuthorizationManager);
@@ -44,7 +44,7 @@ public class OPAAutoConfigurationTest {
         private Map<String, OPAClient> opaClients;
 
         @Test
-        public void test() {
+        public void testCustomOPAClientBeanExistence() {
             assertNotNull(opaClients);
             assertEquals(1, opaClients.size());
             assertNotNull(opaClients.get("customOPAClient"));
@@ -68,7 +68,7 @@ public class OPAAutoConfigurationTest {
         private Map<String, OPAAuthorizationManager> opaAuthorizationManagers;
 
         @Test
-        public void test() {
+        public void testCustomOPAAuthorizationMangerBeanExistence() {
             assertNotNull(opaAuthorizationManagers);
             assertEquals(1, opaAuthorizationManagers.size());
             assertNotNull(opaAuthorizationManagers.get("customOPAAuthorizationManager"));
