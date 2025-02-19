@@ -2,6 +2,10 @@
 
 ## v0.0.9 (unreleased)
 
+* Add `OPAAutoConfiguration` to auto-configure `OPAClient` and `OPAAuthorizationManager` beans. When another
+`OPAClient` and `OPAAuthorizationManager` is defined in Spring context, auto-configured beans will not be created.
+* Add `OPAProperties` to organize properties, provide default values, and externalize them (modify them through
+properties files, yaml files, environment variables, system properties, etc.).
 
 ## v0.0.8
 

@@ -3,6 +3,7 @@ package com.styra.opa.springboot;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.styra.opa.OPAClient;
 import com.styra.opa.OPAException;
+import com.styra.opa.springboot.autoconfigure.OPAProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,7 +142,7 @@ public class OPAAuthorizationManager
     }
 
     public String getReasonKey() {
-        return opaProperties.getReasonKey();
+        return opaProperties.getResponse().getContext().getReasonKey();
     }
 
     /**
@@ -153,7 +154,7 @@ public class OPAAuthorizationManager
      * @param newReasonKey
      */
     public void setReasonKey(String newReasonKey) {
-        opaProperties.setReasonKey(newReasonKey);
+        opaProperties.getResponse().getContext().setReasonKey(newReasonKey);
     }
 
     /**
@@ -300,7 +301,7 @@ public class OPAAuthorizationManager
         }
 
         boolean allow = resp.getDecision();
-        String reason = resp.getReasonForDecision(opaProperties.getReasonKey());
+        String reason = resp.getReasonForDecision(opaProperties.getResponse().getContext().getReasonKey());
         if (reason == null) {
             reason = "access denied by policy";
         }
