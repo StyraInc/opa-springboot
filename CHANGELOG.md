@@ -1,6 +1,6 @@
 # OPA Spring Boot SDK Changelog
 
-## v0.0.9 (unreleased)
+## v0.1.0
 
 * Add `OPAAutoConfiguration` to auto-configure `OPAClient` and `OPAAuthorizationManager` beans. When another
 `OPAClient` and `OPAAuthorizationManager` is defined in Spring context, auto-configured beans will not be created.
