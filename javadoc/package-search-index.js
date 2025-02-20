@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"com.styra.opa.springboot"}];updateSearchResults();
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"com.styra.opa.springboot"},{"l":"com.styra.opa.springboot.autoconfigure"}];updateSearchResults();
