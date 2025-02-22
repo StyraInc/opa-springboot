@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.Map;
 
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest(classes = OPAAutoConfiguration.class)
 public class OPAAutoConfigurationTest {
 
+    @TestPropertySource(properties = { "opa.response.context.reason-key=fr" })
     @Nested
     public class DefaultOPAAutoConfigurationTest {
 
@@ -33,6 +35,15 @@ public class OPAAutoConfigurationTest {
             assertNotNull(opaProperties);
             assertNotNull(opaClient);
             assertNotNull(opaAuthorizationManager);
+        }
+
+        /**
+         * Make sure that {@link #opaProperties} bean is autowired in {@link #opaAuthorizationManager}.
+         */
+        @Test
+        public void testOPAPropertiesBeanAutowiring() {
+            assertEquals("fr", opaProperties.getResponse().getContext().getReasonKey());
+            assertEquals("fr", opaAuthorizationManager.getReasonKey());
         }
     }
 
