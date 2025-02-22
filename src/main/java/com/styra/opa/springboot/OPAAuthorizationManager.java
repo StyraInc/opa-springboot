@@ -147,7 +147,7 @@ public class OPAAuthorizationManager
     }
 
     @PostConstruct
-    public void init() {
+    private void init() {
         if (opaPath == null) {
             opaPath = opaProperties.getPath();
         }
