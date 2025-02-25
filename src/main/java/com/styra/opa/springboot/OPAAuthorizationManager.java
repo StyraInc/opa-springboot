@@ -4,9 +4,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.styra.opa.OPAClient;
 import com.styra.opa.OPAException;
 import com.styra.opa.springboot.autoconfigure.OPAProperties;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
@@ -39,10 +41,14 @@ public class OPAAuthorizationManager
         OPAAuthorizationManager.class
     );
 
+    // If opaPath is null, then we assume the user wants to use the default path.
+    private String opaPath;
+
     private ContextDataProvider ctxProvider;
 
     private OPAClient opa;
 
+    @Autowired
     private OPAProperties opaProperties;
 
     /**
@@ -113,10 +119,9 @@ public class OPAAuthorizationManager
      * @param newProvider
      */
     public OPAAuthorizationManager(OPAClient opa, String newOpaPath, ContextDataProvider newProvider) {
-        // If newOpaPath is null, then we assume the user wants to use the default path.
         opaProperties = new OPAProperties();
-        opaProperties.setPath(newOpaPath);
-        this.opa = opa != null ? opa : defaultOPAClient(opaProperties);
+        this.opaPath = newOpaPath;
+        this.opa = opa != null ? opa : defaultOPAClient();
         this.ctxProvider = newProvider;
     }
 
@@ -131,14 +136,21 @@ public class OPAAuthorizationManager
         this(null, newOpaPath, newProvider);
     }
 
-    private static OPAClient defaultOPAClient(OPAProperties opaProperties) {
-        String opaURL = opaProperties.getUrl();
+    private static OPAClient defaultOPAClient() {
+        String opaURL = OPAProperties.DEFAULT_URL;
         String opaURLEnv = System.getenv("OPA_URL");
         if (opaURLEnv != null) {
             opaURL = opaURLEnv;
         }
         OPAClient opac = new OPAClient(opaURL);
         return opac;
+    }
+
+    @PostConstruct
+    private void init() {
+        if (opaPath == null) {
+            opaPath = opaProperties.getPath();
+        }
     }
 
     public String getReasonKey() {
@@ -258,10 +270,10 @@ public class OPAAuthorizationManager
         logger.trace("OPA input for request: {}", iMap);
         OPAResponse resp = null;
         try {
-            if (opaProperties.getPath() != null) {
-                logger.trace("OPA path is {}", opaProperties.getPath());
+            if (opaPath != null) {
+                logger.trace("OPA path is {}", opaPath);
                 resp = opa.evaluate(
-                        opaProperties.getPath(),
+                        opaPath,
                     iMap,
                     new TypeReference<OPAResponse>() {}
                 );
