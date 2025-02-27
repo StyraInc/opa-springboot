@@ -1,5 +1,9 @@
 # OPA Spring Boot SDK Changelog
 
+## v0.1.1
+
+* Autowire `OPAProperties` in `OPAAutoConfiguration`
+
 ## v0.1.0
 
 * Add `OPAAutoConfiguration` to auto-configure `OPAClient` and `OPAAuthorizationManager` beans. When another
