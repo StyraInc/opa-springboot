@@ -26,13 +26,11 @@ On Windows:
 gradlew.bat publishToMavenLocal -"Pskip.signing"
 ```
 
-## SDK Example Usage (high-level)
-
+## SDK Example Usage
+### OPAAuthorizationManager
 Using `OPAAuthorizationManager`, HTTP requests could be authorized:
 
 ```java
-// ... 
-
 import com.styra.opa.springboot.OPAAuthorizationManager;
 import com.styra.opa.OPAClient;
 
@@ -49,12 +47,12 @@ public class SecurityConfig {
         // Other security configs
         return http.build();
     }
-
 }
 ```
-Auto-configuration will be done using `OPAAutoConfiguration`. If any customization would be needed, custom `OPAClient`
-or `OPAAuthorizationManager` beans could be defined.
+Auto-configuration will be done using `OPAAutoConfiguration`. If any customization be needed, custom `OPAClient`
+or `OPAAuthorizationManager` beans could be defined by clients.
 
+### OPAProperties
 Configuration properties are defined in `OPAProperties` and can be set
 [externally](https://docs.spring.io/spring-boot/reference/features/external-config.html), e.g. via
 `application.properties`, `application.yaml`, system properties, or environment variables.
@@ -74,6 +72,30 @@ opa:
     response:
         context:
             reason-key: de # Key to search for decision reasons in the response. Default is "en".
+```
+### OPAPathSelector
+By default, OPAAuthorizationManager does not use any path when calling OPA (evaluating policies). Clients could define
+an `OPAPathSelector` bean, which could select paths based on the `Authentication`, `RequestAuthorizationContext`, or
+opaRequestBody `Map`.
+
+Example `OPAPathSelector` bean:
+```java
+@Configuration
+public class OPAConfig {
+    @Bean
+    public OPAPathSelector opaPathSelector() {
+        return (authentication, requestAuthorizationContext, opaRequestBody) -> {
+            String httpRequestPath = requestAuthorizationContext.getRequest().getServletPath();
+            if (httpRequestPath.startsWith("/foo")) {
+                return "foo/main";
+            } else if (httpRequestPath.startsWith("/bar")) {
+                return "bar/main";
+            } else {
+                return "default/main";
+            }
+        };
+    }
+}
 ```
 
 ## Policy Input/Output Schema

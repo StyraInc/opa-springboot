@@ -3,13 +3,23 @@ package com.styra.opa.springboot;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.styra.opa.OPAClient;
+import com.styra.opa.springboot.autoconfigure.OPAAutoConfiguration;
+import com.styra.opa.springboot.autoconfigure.OPAProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
@@ -18,6 +28,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -42,6 +54,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static java.util.Map.entry;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,6 +63,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@SpringBootTest(classes = OPAAutoConfiguration.class)
 @Testcontainers
 class OPAAuthorizationManagerTest {
 
@@ -62,20 +76,15 @@ class OPAAuthorizationManagerTest {
     @Mock
     private HttpServletRequest httpServletRequest;
 
-    private int opaPort = 8181;
-    private int altPort = 8282;
-
     private ObjectMapper mapper = new ObjectMapper();
-
-    // Checkstyle does not like magic numbers, but these are just test values.
-    // The B value should be double the A value.
-    private int testIntegerA = 8;
-    private int testIntegerB = 16;
-    private double testDoubleA = 3.14159;
 
     private String address;
     private String altAddress;
-    private Map<String, String> headers = Map.ofEntries(entry("Authorization", "Bearer supersecret"));
+
+    //CHECKSTYLE:OFF
+    private static int opaPort = 8181;
+    private static int altPort = 8282;
+    private static Map<String, String> headers = Map.ofEntries(entry("Authorization", "Bearer supersecret"));
 
     @Container
     // Checkstyle is disabled here because it wants opac to 'be private and
@@ -85,8 +94,7 @@ class OPAAuthorizationManagerTest {
     // Checkstyle also complains that this is in the wrong order, because public
     // variables are supposed to be declared first. But then it would need to
     // have magic numbers since opaPort and friends are private.
-    //CHECKSTYLE:OFF
-    public GenericContainer<?> opac = new GenericContainer<>(
+    public static GenericContainer<?> opac = new GenericContainer<>(
             new ImageFromDockerfile()
                 // .withFileFromClasspath(path_in_build_context, path_in_resources_dir)
                 .withFileFromClasspath("Dockerfile", "opa.Dockerfile")
@@ -98,6 +106,12 @@ class OPAAuthorizationManagerTest {
         .withCommand("run -s --authentication=token --authorization=basic --bundle /policy --addr=0.0.0.0:" + opaPort)
         .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(OPAAuthorizationManagerTest.class)));
     //CHECKSTYLE:ON
+
+    @DynamicPropertySource
+    static void registerOpaProperties(DynamicPropertyRegistry registry) {
+        registry.add("opa.url",
+                () -> String.format("http://%s:%d", opac.getHost(), opac.getMappedPort(opaPort)));
+    }
 
     private Authentication createMockAuthentication() {
         Authentication mockAuth = mock(Authentication.class);
@@ -504,4 +518,48 @@ class OPAAuthorizationManagerTest {
 
     }
 
+    @Nested
+    @Import(OPAPathSelectorTest.CustomOPAConfig.class)
+    public class OPAPathSelectorTest {
+
+        @Autowired
+        private OPAAuthorizationManager opaAuthorizationManager;
+
+        @Test
+        public void testOPAPathSelectorAlwaysTruePolicy() {
+            Authentication mockAuth = createMockAuthentication();
+            when(mockAuth.getPrincipal()).thenReturn("testuser_allowed");
+            when(authenticationSupplier.get()).thenReturn(mockAuth);
+            assertDoesNotThrow(() -> opaAuthorizationManager.verify(authenticationSupplier, context));
+        }
+
+        @Test
+        public void testOPAPathSelectorAlwaysFalsePolicy() {
+            Authentication mockAuth = createMockAuthentication();
+            when(mockAuth.getPrincipal()).thenReturn("testuser_denied");
+            when(authenticationSupplier.get()).thenReturn(mockAuth);
+            assertThrows(AccessDeniedException.class,
+                    () -> opaAuthorizationManager.verify(authenticationSupplier, context));
+        }
+
+        @Order(Ordered.HIGHEST_PRECEDENCE)
+        @TestConfiguration
+        public static class CustomOPAConfig {
+            @Bean
+            public OPAClient opaClient(OPAProperties opaProperties) {
+                return new OPAClient(opaProperties.getUrl(), headers);
+            }
+
+            @Bean
+            public OPAPathSelector opaPathSelector() {
+                return (authentication, requestAuthorizationContext, opaRequestBody) -> {
+                    if (authentication.getPrincipal().equals("testuser_allowed")) {
+                        return "policy/decision_always_true";
+                    } else {
+                        return "policy/decision_always_false";
+                    }
+                };
+            }
+        }
+    }
 }

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.styra.opa.OPAClient;
 import com.styra.opa.OPAException;
 import com.styra.opa.springboot.autoconfigure.OPAProperties;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +49,9 @@ public class OPAAuthorizationManager
 
     @Autowired
     private OPAProperties opaProperties;
+
+    @Autowired
+    private OPAPathSelector opaPathSelector;
 
     /**
      * The authorization manager will internally instantiate an OPAClient
@@ -144,13 +146,6 @@ public class OPAAuthorizationManager
         }
         OPAClient opac = new OPAClient(opaURL);
         return opac;
-    }
-
-    @PostConstruct
-    private void init() {
-        if (opaPath == null) {
-            opaPath = opaProperties.getPath();
-        }
     }
 
     public String getReasonKey() {
@@ -270,10 +265,12 @@ public class OPAAuthorizationManager
         logger.trace("OPA input for request: {}", iMap);
         OPAResponse resp = null;
         try {
-            if (opaPath != null) {
-                logger.trace("OPA path is {}", opaPath);
+            String selectedOPAPath = opaPathSelector != null
+                    ? opaPathSelector.selectPath(authentication.get(), object, iMap) : opaPath;
+            if (selectedOPAPath != null) {
+                logger.trace("OPA path is {}", selectedOPAPath);
                 resp = opa.evaluate(
-                        opaPath,
+                        selectedOPAPath,
                     iMap,
                     new TypeReference<OPAResponse>() {}
                 );
