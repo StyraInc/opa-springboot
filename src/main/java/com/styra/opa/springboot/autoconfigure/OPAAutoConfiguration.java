@@ -2,6 +2,7 @@ package com.styra.opa.springboot.autoconfigure;
 
 import com.styra.opa.OPAClient;
 import com.styra.opa.springboot.OPAAuthorizationManager;
+import com.styra.opa.springboot.OPAPathSelector;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -27,6 +28,15 @@ public class OPAAutoConfiguration {
     @ConditionalOnMissingBean(OPAClient.class)
     public OPAClient opaClient(OPAProperties opaProperties) {
         return new OPAClient(opaProperties.getUrl());
+    }
+
+    /**
+     * Create an {@link OPAPathSelector} bean using {@link OPAProperties#getPath()}.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public OPAPathSelector opaPathSelector(OPAProperties opaProperties) {
+        return (authentication, requestAuthorizationContext, opaRequestBody) -> opaProperties.getPath();
     }
 
     /**

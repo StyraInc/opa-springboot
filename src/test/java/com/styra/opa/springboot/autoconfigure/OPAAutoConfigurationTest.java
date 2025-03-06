@@ -2,6 +2,7 @@ package com.styra.opa.springboot.autoconfigure;
 
 import com.styra.opa.OPAClient;
 import com.styra.opa.springboot.OPAAuthorizationManager;
+import com.styra.opa.springboot.OPAPathSelector;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,12 +29,15 @@ public class OPAAutoConfigurationTest {
         @Autowired(required = false)
         private OPAClient opaClient;
         @Autowired(required = false)
+        private OPAPathSelector opaPathSelector;
+        @Autowired(required = false)
         private OPAAuthorizationManager opaAuthorizationManager;
 
         @Test
         public void testDefaultBeansExistence() {
             assertNotNull(opaProperties);
             assertNotNull(opaClient);
+            assertNotNull(opaPathSelector);
             assertNotNull(opaAuthorizationManager);
         }
 
@@ -67,6 +71,30 @@ public class OPAAutoConfigurationTest {
             @Bean
             public OPAClient customOPAClient() {
                 return new OPAClient("http://localhost:8182");
+            }
+        }
+    }
+
+    @Import(OPAAutoConfigurationTestWithCustomOPAPathSelector.CustomOPAPathSelectorConfiguration.class)
+    @Nested
+    public class OPAAutoConfigurationTestWithCustomOPAPathSelector {
+
+        @Autowired(required = false)
+        private Map<String, OPAPathSelector> opaPathSelectors;
+
+        @Test
+        public void testCustomOPAPathSelectorBeanExistence() {
+            assertNotNull(opaPathSelectors);
+            assertEquals(1, opaPathSelectors.size());
+            assertNotNull(opaPathSelectors.get("customOPAPathSelector"));
+        }
+
+        @Configuration
+        public static class CustomOPAPathSelectorConfiguration {
+
+            @Bean
+            public OPAPathSelector customOPAPathSelector() {
+                return (authentication, requestAuthorizationContext, opaRequestBody) -> "foo/bar";
             }
         }
     }
