@@ -87,13 +87,6 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
     /**
      * @see OPAAuthorizationManager#OPAAuthorizationManager(OPAClient, String, ContextDataProvider)
      */
-    public OPAAuthorizationManager(OPAClient opaClient, String opaPath) {
-        this(opaClient, opaPath, null);
-    }
-
-    /**
-     * @see OPAAuthorizationManager#OPAAuthorizationManager(OPAClient, String, ContextDataProvider)
-     */
     public OPAAuthorizationManager(String opaPath) {
         this(null, opaPath, null);
     }
@@ -101,8 +94,22 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
     /**
      * @see OPAAuthorizationManager#OPAAuthorizationManager(OPAClient, String, ContextDataProvider)
      */
+    public OPAAuthorizationManager(OPAClient opaClient, String opaPath) {
+        this(opaClient, opaPath, null);
+    }
+
+    /**
+     * @see OPAAuthorizationManager#OPAAuthorizationManager(OPAClient, String, ContextDataProvider)
+     */
     public OPAAuthorizationManager(OPAClient opaClient, ContextDataProvider contextDataProvider) {
         this(opaClient, null, contextDataProvider);
+    }
+
+    /**
+     * @see OPAAuthorizationManager#OPAAuthorizationManager(OPAClient, String, ContextDataProvider)
+     */
+    public OPAAuthorizationManager(String opaPath, ContextDataProvider contextDataProvider) {
+        this(null, opaPath, contextDataProvider);
     }
 
     /**
@@ -121,13 +128,6 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
         this.contextDataProvider = contextDataProvider;
     }
 
-    /**
-     * @see OPAAuthorizationManager#OPAAuthorizationManager(OPAClient, String, ContextDataProvider)
-     */
-    public OPAAuthorizationManager(String opaPath, ContextDataProvider contextDataProvider) {
-        this(null, opaPath, contextDataProvider);
-    }
-
     private static OPAClient defaultOPAClient() {
         String opaUrl = OPAProperties.DEFAULT_URL;
         String opaUrlEnv = System.getenv("OPA_URL");
@@ -137,21 +137,62 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
         return new OPAClient(opaUrl);
     }
 
-    /**
-     * Changes the "preferred" key where the access decision reason should be searched for in the {@link OPAResponse}.
-     * A default value of {@value OPAProperties.Response.Context#DEFAULT_REASON_KEY} is used. If the selected
-     * key is not present in the response, the key which sorts lexicographically first is used instead.
-     */
-    public void setReasonKey(String reasonKey) {
-        this.reasonKey = reasonKey;
+    @Override
+    public void verify(Supplier<Authentication> authenticationSupplier, RequestAuthorizationContext object) {
+        OPAResponse opaResponse = opaRequest(authenticationSupplier, object);
+        if (opaResponse == null) {
+            throw new AccessDeniedException("null response from policy");
+        }
+
+        boolean decision = opaResponse.getDecision();
+        if (decision) {
+            LOGGER.trace("access verified successfully");
+            return;
+        }
+
+        String reason = opaResponse.getReasonForDecision(reasonKey);
+        if (reason == null) {
+            reason = "access denied by policy";
+        }
+        throw new AccessDeniedException(reason);
+    }
+
+    @Override
+    public AuthorizationDecision check(Supplier<Authentication> authenticationSupplier,
+                                       RequestAuthorizationContext object) {
+        OPAResponse opaResponse = opaRequest(authenticationSupplier, object);
+        if (opaResponse == null) {
+            LOGGER.trace("OPA provided a null response, default-denying access");
+            return new AuthorizationDecision(false);
+        }
+        return new AuthorizationDecision(opaResponse.getDecision());
     }
 
     /**
-     * If {@code nullableValue} is null, this function is a NO-OP, otherwise, it calls
-     * {@code map}.put({@code key}, {@code nullableValue}).
+     * This method can be used to directly call OPA without generating an {@link AuthorizationDecision}, which can be
+     * used to examine the OPA response. You should consider using the OPA Java SDK (which this library depends on)
+     * directly rather than using this method, as it should not be needed during normal use.
      */
-    private void nullablePut(Map<String, Object> map, String key, Object nullableValue) {
-        Optional.ofNullable(nullableValue).ifPresent(value -> map.put(key, value));
+    public OPAResponse opaRequest(Supplier<Authentication> authenticationSupplier, RequestAuthorizationContext object) {
+        Map<String, Object> input = makeRequestInput(authenticationSupplier, object);
+        LOGGER.trace("OPA input (request body) is: {}", input);
+        try {
+            OPAResponse opaResponse;
+            String selectedOPAPath = opaPathSelector != null
+                    ? opaPathSelector.selectPath(authenticationSupplier.get(), object, input) : opaPath;
+            if (selectedOPAPath != null) {
+                LOGGER.trace("OPA path is: {}", selectedOPAPath);
+                opaResponse = opaClient.evaluate(selectedOPAPath, input, new TypeReference<>() {});
+            } else {
+                LOGGER.trace("Using default OPA path");
+                opaResponse = opaClient.evaluate(input, new TypeReference<>() {});
+            }
+            LOGGER.trace("OPA response is: {}", opaResponse);
+            return opaResponse;
+        } catch (OPAException e) {
+            LOGGER.error("caught exception from OPA client:", e);
+            return null;
+        }
     }
 
     private Map<String, Object> makeRequestInput(Supplier<Authentication> authenticationSupplier,
@@ -202,81 +243,40 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
         nullablePut(subject, SUBJECT_AUTHORITIES, subjectAuthorities);
 
         return Map.ofEntries(
-            entry(SUBJECT, subject),
-            entry(RESOURCE, Map.ofEntries(
-                    entry(RESOURCE_TYPE, opaProperties.getRequest().getResource().getType()),
-                    entry(RESOURCE_ID, resourceId)
+                entry(SUBJECT, subject),
+                entry(RESOURCE, Map.ofEntries(
+                        entry(RESOURCE_TYPE, opaProperties.getRequest().getResource().getType()),
+                        entry(RESOURCE_ID, resourceId)
                 )),
-            entry(ACTION, Map.ofEntries(
-                    entry(ACTION_NAME, actionName),
-                    entry(ACTION_PROTOCOL, actionProtocol),
-                    entry(ACTION_HEADERS, actionHeaders)
+                entry(ACTION, Map.ofEntries(
+                        entry(ACTION_NAME, actionName),
+                        entry(ACTION_PROTOCOL, actionProtocol),
+                        entry(ACTION_HEADERS, actionHeaders)
                 )),
-            entry(CONTEXT, context)
+                entry(CONTEXT, context)
         );
     }
 
     /**
-     * This method can be used to directly call OPA without generating an {@link AuthorizationDecision}, which can be
-     * used to examine the OPA response. You should consider using the OPA Java SDK (which this library depends on)
-     * directly rather than using this method, as it should not be needed during normal use.
+     * If {@code nullableValue} is null, this function is a NO-OP, otherwise, it calls
+     * {@code map}.put({@code key}, {@code nullableValue}).
      */
-    public OPAResponse opaRequest(Supplier<Authentication> authenticationSupplier, RequestAuthorizationContext object) {
-        Map<String, Object> input = makeRequestInput(authenticationSupplier, object);
-        LOGGER.trace("OPA input (request body) is: {}", input);
-        try {
-            OPAResponse opaResponse;
-            String selectedOPAPath = opaPathSelector != null
-                    ? opaPathSelector.selectPath(authenticationSupplier.get(), object, input) : opaPath;
-            if (selectedOPAPath != null) {
-                LOGGER.trace("OPA path is: {}", selectedOPAPath);
-                opaResponse = opaClient.evaluate(selectedOPAPath, input, new TypeReference<>() {});
-            } else {
-                LOGGER.trace("Using default OPA path");
-                opaResponse = opaClient.evaluate(input, new TypeReference<>() {});
-            }
-            LOGGER.trace("OPA response is: {}", opaResponse);
-            return opaResponse;
-        } catch (OPAException e) {
-            LOGGER.error("caught exception from OPA client:", e);
-            return null;
-        }
-    }
-
-    @Override
-    public AuthorizationDecision check(Supplier<Authentication> authenticationSupplier,
-                                       RequestAuthorizationContext object) {
-        OPAResponse opaResponse = opaRequest(authenticationSupplier, object);
-        if (opaResponse == null) {
-            LOGGER.trace("OPA provided a null response, default-denying access");
-            return new AuthorizationDecision(false);
-        }
-        return new AuthorizationDecision(opaResponse.getDecision());
-    }
-
-    @Override
-    public void verify(Supplier<Authentication> authenticationSupplier, RequestAuthorizationContext object) {
-        OPAResponse opaResponse = opaRequest(authenticationSupplier, object);
-        if (opaResponse == null) {
-            throw new AccessDeniedException("null response from policy");
-        }
-
-        boolean decision = opaResponse.getDecision();
-        if (decision) {
-            LOGGER.trace("access verified successfully");
-            return;
-        }
-
-        String reason = opaResponse.getReasonForDecision(reasonKey);
-        if (reason == null) {
-            reason = "access denied by policy";
-        }
-        throw new AccessDeniedException(reason);
+    private void nullablePut(Map<String, Object> map, String key, Object nullableValue) {
+        Optional.ofNullable(nullableValue).ifPresent(value -> map.put(key, value));
     }
 
     @Autowired
     public void setOpaProperties(OPAProperties opaProperties) {
         this.opaProperties = opaProperties;
         reasonKey = opaProperties.getResponse().getContext().getReasonKey();
+    }
+
+    /**
+     * Changes the "preferred" key where the access decision reason should be searched for in the {@link OPAResponse}.
+     * A default value of {@value OPAProperties.Response.Context#DEFAULT_REASON_KEY} is used. If the selected
+     * key is not present in the response, the key which sorts lexicographically first is used instead.
+     */
+    public void setReasonKey(String reasonKey) {
+        this.reasonKey = reasonKey;
     }
 }
