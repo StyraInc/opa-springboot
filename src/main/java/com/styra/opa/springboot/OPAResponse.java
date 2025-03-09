@@ -6,8 +6,8 @@ import lombok.NoArgsConstructor;
 
 /**
  * This class models the data to be returned from an OPA Spring Boot SDK policy. The
- * structure of the response is defined by the AuthZEN spec
- * (https://openid.github.io/authzen).
+ * <a href="https://docs.styra.com/sdk/springboot/reference/input-output-schema#output">response schema</a> is
+ * compliant with the <a href="https://openid.github.io/authzen">AuthZEN spec</a>.
  */
 @Data
 @NoArgsConstructor
@@ -15,35 +15,20 @@ import lombok.NoArgsConstructor;
 public class OPAResponse {
 
     private boolean decision;
-
     private OPAResponseContext context;
 
     public boolean getDecision() {
-        return this.decision;
-    }
-
-    public void setDecision(boolean newDecision) {
-        this.decision = newDecision;
-    }
-
-    public OPAResponseContext getContext() {
-        return this.context;
-    }
-
-    public void setContext(OPAResponseContext newContext) {
-        this.context = newContext;
+        return decision;
     }
 
     /**
-     * Wraps OPAResponseContext.getReasonForDecision(). If the context is
-     * omitted (which the spec permits), then it returns null.
+     * Wraps {@link OPAResponseContext#getReasonForDecision(String)}. If the context is omitted (which the spec
+     * permits), then it returns null.
      */
     public String getReasonForDecision(String searchKey) {
         if (this.context == null) {
             return null;
         }
-
         return this.context.getReasonForDecision(searchKey);
     }
-
 }

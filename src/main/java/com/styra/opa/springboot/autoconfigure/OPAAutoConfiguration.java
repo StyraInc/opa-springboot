@@ -36,7 +36,7 @@ public class OPAAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public OPAPathSelector opaPathSelector(OPAProperties opaProperties) {
-        return (authentication, requestAuthorizationContext, opaRequestBody) -> opaProperties.getPath();
+        return (authentication, requestAuthorizationContext, opaInput) -> opaProperties.getPath();
     }
 
     /**

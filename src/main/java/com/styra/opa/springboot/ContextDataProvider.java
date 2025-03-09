@@ -6,14 +6,11 @@ import org.springframework.security.web.access.intercept.RequestAuthorizationCon
 import java.util.function.Supplier;
 
 /**
- * This interface can be used to expose additional information to the OPA
- * policy via the context field. Data returned by getContextData() is placed
- * in input.context.data. The returned object must be JSON serializeable.
+ * This interface can be used to expose additional information to the OPA policy. Data returned by
+ * {@link #getContextData(Supplier, RequestAuthorizationContext)} is placed in {@code input.context.data}. The
+ * returned object must be JSON serializable.
  */
 @FunctionalInterface
 public interface ContextDataProvider {
-    Object getContextData(
-        Supplier<Authentication> authentication,
-        RequestAuthorizationContext object
-    );
+    Object getContextData(Supplier<Authentication> authentication, RequestAuthorizationContext object);
 }

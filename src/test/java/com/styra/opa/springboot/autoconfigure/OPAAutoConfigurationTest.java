@@ -94,7 +94,7 @@ public class OPAAutoConfigurationTest {
 
             @Bean
             public OPAPathSelector customOPAPathSelector() {
-                return (authentication, requestAuthorizationContext, opaRequestBody) -> "foo/bar";
+                return (authentication, requestAuthorizationContext, opaInput) -> "foo/bar";
             }
         }
     }

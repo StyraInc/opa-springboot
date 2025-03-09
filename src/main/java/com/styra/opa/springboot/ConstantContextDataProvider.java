@@ -6,22 +6,20 @@ import org.springframework.security.web.access.intercept.RequestAuthorizationCon
 import java.util.function.Supplier;
 
 /**
- * This helper class allows creating a ContextDataProvider which always returns
- * the same constant value. This is useful for tests, and also for situations
- * where the extra data to inject does not change during runtime.
+ * This helper class implements {@link ContextDataProvider} and always returns the same constant value passed in the
+ * constructor. This is useful for tests, and also for situations where the extra data to inject does not change during
+ * runtime.
  */
 public class ConstantContextDataProvider implements ContextDataProvider {
 
-    private Object data;
+    private final Object data;
 
-    public ConstantContextDataProvider(Object newData) {
-        this.data = newData;
+    public ConstantContextDataProvider(Object data) {
+        this.data = data;
     }
 
-    public Object getContextData(
-        Supplier<Authentication> authentication,
-        RequestAuthorizationContext object
-    ) {
+    @Override
+    public Object getContextData(Supplier<Authentication> authentication, RequestAuthorizationContext object) {
         return this.data;
     }
 }

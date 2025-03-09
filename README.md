@@ -76,7 +76,7 @@ opa:
 ### OPAPathSelector
 By default, OPAAuthorizationManager does not use any path when calling OPA (evaluating policies). Clients could define
 an `OPAPathSelector` bean, which could select paths based on the `Authentication`, `RequestAuthorizationContext`, or
-opaRequestBody `Map`.
+opaInput `Map`.
 
 Example `OPAPathSelector` bean:
 ```java
@@ -84,7 +84,7 @@ Example `OPAPathSelector` bean:
 public class OPAConfig {
     @Bean
     public OPAPathSelector opaPathSelector() {
-        return (authentication, requestAuthorizationContext, opaRequestBody) -> {
+        return (authentication, requestAuthorizationContext, opaInput) -> {
             String httpRequestPath = requestAuthorizationContext.getRequest().getServletPath();
             if (httpRequestPath.startsWith("/foo")) {
                 return "foo/main";

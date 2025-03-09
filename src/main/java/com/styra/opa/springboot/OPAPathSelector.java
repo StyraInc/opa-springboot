@@ -6,11 +6,10 @@ import org.springframework.security.web.access.intercept.RequestAuthorizationCon
 import java.util.Map;
 
 /**
- * Select target OPA path based on {@link Authentication}, {@link RequestAuthorizationContext}, and
- * opaRequestBody {@link Map}.
+ * Selects target OPA path based on {@link Authentication}, {@link RequestAuthorizationContext}, and input {@link Map}.
  */
 @FunctionalInterface
 public interface OPAPathSelector {
     String selectPath(Authentication authentication, RequestAuthorizationContext requestAuthorizationContext,
-                      Map<String, Object> opaRequestBody);
+                      Map<String, Object> opaInput);
 }

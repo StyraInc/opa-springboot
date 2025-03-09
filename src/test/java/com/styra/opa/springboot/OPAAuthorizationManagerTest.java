@@ -22,7 +22,6 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDecision;
-import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -53,11 +52,31 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.styra.opa.springboot.OPAAuthorizationManager.ACTION;
+import static com.styra.opa.springboot.OPAAuthorizationManager.ACTION_HEADERS;
+import static com.styra.opa.springboot.OPAAuthorizationManager.ACTION_NAME;
+import static com.styra.opa.springboot.OPAAuthorizationManager.ACTION_PROTOCOL;
+import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT;
+import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT_DATA;
+import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT_HOST;
+import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT_IP;
+import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT_PORT;
+import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT_TYPE;
+import static com.styra.opa.springboot.OPAAuthorizationManager.RESOURCE;
+import static com.styra.opa.springboot.OPAAuthorizationManager.RESOURCE_ID;
+import static com.styra.opa.springboot.OPAAuthorizationManager.RESOURCE_TYPE;
+import static com.styra.opa.springboot.OPAAuthorizationManager.SUBJECT;
+import static com.styra.opa.springboot.OPAAuthorizationManager.SUBJECT_AUTHORITIES;
+import static com.styra.opa.springboot.OPAAuthorizationManager.SUBJECT_DETAILS;
+import static com.styra.opa.springboot.OPAAuthorizationManager.SUBJECT_ID;
+import static com.styra.opa.springboot.OPAAuthorizationManager.SUBJECT_TYPE;
 import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -66,6 +85,35 @@ import static org.mockito.Mockito.when;
 @SpringBootTest(classes = OPAAutoConfiguration.class)
 @Testcontainers
 class OPAAuthorizationManagerTest {
+
+    private static final int OPA_PORT = 8181;
+    /**
+     * Besides OPA default port ({@code opaPort}), OPA is exposed under {@code localhost:8282/customprefix} using
+     * Nginx.<br/>
+     * Nginx configuration is provided in {@code src/test/resources/nginx.conf} file.
+     */
+    private static final int ALT_PORT = 8282;
+    private static final Map<String, String> HEADERS = Map.ofEntries(entry("Authorization", "Bearer supersecret"));
+
+    //CHECKSTYLE:OFF
+    /*
+     * Checkstyle is disabled here because it wants opaContainer to 'be private and have accessor methods', which seems
+     * pointless and will probably mess up test containers.
+     */
+    @Container
+    public static GenericContainer<?> opaContainer = new GenericContainer<>(
+            new ImageFromDockerfile()
+                    // .withFileFromClasspath(path_in_build_context, path_in_resources_dir)
+                    .withFileFromClasspath("Dockerfile", "opa.Dockerfile")
+                    .withFileFromClasspath("nginx.conf", "nginx.conf")
+                    .withFileFromClasspath("entrypoint.sh", "entrypoint.sh")
+    )
+            .withExposedPorts(OPA_PORT, ALT_PORT)
+            .withFileSystemBind("./testdata/simple", "/policy", BindMode.READ_ONLY)
+            .withCommand("run -s --authentication=token --authorization=basic --bundle /policy --addr=0.0.0.0:"
+                    + OPA_PORT)
+            .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(OPAAuthorizationManagerTest.class)));
+    //CHECKSTYLE:ON
 
     @Mock
     private Supplier<Authentication> authenticationSupplier;
@@ -76,41 +124,15 @@ class OPAAuthorizationManagerTest {
     @Mock
     private HttpServletRequest httpServletRequest;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     private String address;
     private String altAddress;
 
-    //CHECKSTYLE:OFF
-    private static int opaPort = 8181;
-    private static int altPort = 8282;
-    private static Map<String, String> headers = Map.ofEntries(entry("Authorization", "Bearer supersecret"));
-
-    @Container
-    // Checkstyle is disabled here because it wants opac to 'be private and
-    // have accessor methods', which seems pointless and will probably mess up
-    // test containers.
-    //
-    // Checkstyle also complains that this is in the wrong order, because public
-    // variables are supposed to be declared first. But then it would need to
-    // have magic numbers since opaPort and friends are private.
-    public static GenericContainer<?> opac = new GenericContainer<>(
-            new ImageFromDockerfile()
-                // .withFileFromClasspath(path_in_build_context, path_in_resources_dir)
-                .withFileFromClasspath("Dockerfile", "opa.Dockerfile")
-                .withFileFromClasspath("nginx.conf", "nginx.conf")
-                .withFileFromClasspath("entrypoint.sh", "entrypoint.sh")
-        )
-        .withExposedPorts(opaPort, altPort)
-        .withFileSystemBind("./testdata/simple", "/policy", BindMode.READ_ONLY)
-        .withCommand("run -s --authentication=token --authorization=basic --bundle /policy --addr=0.0.0.0:" + opaPort)
-        .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(OPAAuthorizationManagerTest.class)));
-    //CHECKSTYLE:ON
-
     @DynamicPropertySource
     static void registerOpaProperties(DynamicPropertyRegistry registry) {
         registry.add("opa.url",
-                () -> String.format("http://%s:%d", opac.getHost(), opac.getMappedPort(opaPort)));
+                () -> String.format("http://%s:%d", opaContainer.getHost(), opaContainer.getMappedPort(OPA_PORT)));
     }
 
     private Authentication createMockAuthentication() {
@@ -132,22 +154,15 @@ class OPAAuthorizationManagerTest {
     }
 
     /**
-     * This is used to create a mock auth object where most of the fields are
-     * null, to suss out exceptions when optional fields are omitted.
-     *
-     * @return
+     * This is used to create a mock {@link Authentication} object where most of the fields are null, to resolve
+     * exceptions when optional fields are omitted.
      */
     private Authentication createNullMockAuthentication() {
         Authentication mockAuth = mock(Authentication.class);
         when(mockAuth.getPrincipal()).thenReturn("testuser");
         when(mockAuth.getCredentials()).thenReturn(null);
-
-        WebAuthenticationDetails details = new WebAuthenticationDetails(httpServletRequest);
         when(mockAuth.getDetails()).thenReturn(null);
 
-        GrantedAuthority authority1 = new SimpleGrantedAuthority("ROLE_USER");
-        GrantedAuthority authority2 = new SimpleGrantedAuthority("ROLE_ADMIN");
-        Collection<? extends GrantedAuthority> authorities = Arrays.asList(authority1, authority2);
         doReturn(null).when(mockAuth).getAuthorities();
 
         when(mockAuth.isAuthenticated()).thenReturn(true);
@@ -155,21 +170,22 @@ class OPAAuthorizationManagerTest {
         return mockAuth;
     }
 
-    // Convert the value to JSON and then retrieve the value at the specified
-    // path.
-    //
-    // Note that this does stringify all JSON types, including null, so there
-    // could be some slight shadowing problems.
+    /**
+     * Convert the value to JSON and then retrieve the value at the specified path.<br/>
+     * Note that this does stringify all JSON types, including null, so there could be some slight shadowing problems.
+     */
     private String jsonGet(Object root, String path) {
-        JsonNode jroot = this.mapper.valueToTree(root);
-        return jroot.at(path).asText();
+        JsonNode jsonRoot = this.mapper.valueToTree(root);
+        return jsonRoot.at(path).asText();
     }
 
-    // List all JSON paths found under the object.
+    /**
+     * List all JSON paths found under the object.
+     */
     private List<String> jsonList(Object root) {
-        JsonNode jroot = this.mapper.valueToTree(root);
+        JsonNode jsonRoot = this.mapper.valueToTree(root);
         List<String> paths = new ArrayList<>();
-        jsonList(jroot, "", paths);
+        jsonList(jsonRoot, "", paths);
         return paths;
     }
 
@@ -189,9 +205,11 @@ class OPAAuthorizationManagerTest {
         }
     }
 
-    // Create a human-readable list of differences between to objects. The
-    // possible paths are enumerated with jsonList(), and they are retrieved
-    // using jsonGet(). This does mean that all values are compared stringily.
+    /**
+     * Create a human-readable list of differences between two objects. The possible paths are enumerated with
+     * {@link #jsonList(Object)}, and they are retrieved using {@link #jsonGet(Object, String)}. This does mean that
+     * all values are compared stringly.
+     */
     private List<String> jsonDiff(Object rootA, Object rootB) {
         List<String> pathsA = jsonList(rootA);
         List<String> pathsB = jsonList(rootB);
@@ -213,13 +231,13 @@ class OPAAuthorizationManagerTest {
     }
 
     private String jsonPretty(Object root) {
-        //CHECKSTYLE:OFF
         try {
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
+            //CHECKSTYLE:OFF
         } catch (Exception e) {
+            //CHECKSTYLE:ON
             return String.format("failed to pretty print JSON: %s", e);
         }
-        //CHECKSTYLE:ON
     }
 
     @BeforeEach
@@ -241,281 +259,274 @@ class OPAAuthorizationManagerTest {
         when(httpServletRequest.getRemoteHost()).thenReturn("example.com");
         when(httpServletRequest.getRemoteAddr()).thenReturn("192.0.2.123");
 
-        address = "http://" + opac.getHost() + ":" + opac.getMappedPort(opaPort);
-        altAddress = "http://" + opac.getHost() + ":" + opac.getMappedPort(altPort) + "/customprefix";
+        address = "http://" + opaContainer.getHost() + ":" + opaContainer.getMappedPort(OPA_PORT);
+        altAddress = "http://" + opaContainer.getHost() + ":" + opaContainer.getMappedPort(ALT_PORT) + "/customprefix";
     }
 
     @AfterEach
     public void dumpLogs() {
         System.out.println("==== container logs from OPA container ====");
-        final String logs = opac.getLogs();
-        System.out.println(logs);
+        System.out.println(opaContainer.getLogs());
     }
 
+    /**
+     * This test just makes sure that we can reach the OPAClient health endpoint and that it returns the expected body.
+     */
     @Test
     public void testOPAHealth() {
-        // This test just makes sure that we can reach the OPAClient health endpoint
-        // and that it returns the expected {} value.
-
         HttpClient client = HttpClient.newHttpClient();
-        HttpRequest req = HttpRequest.newBuilder().uri(URI.create(address + "/health")).build();
-        HttpResponse<String> resp = null;
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(address + "/health")).build();
+        HttpResponse<String> response = null;
 
         try {
-            resp = client.send(req, HttpResponse.BodyHandlers.ofString());
-
-        //CHECKSTYLE:OFF
+            response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            //CHECKSTYLE:OFF
         } catch (Exception e) {
             //CHECKSTYLE:ON
             System.out.println("exception: " + e);
             assertNull(e);
         }
 
-        String body = resp.body();
-
-        assertEquals("{}\n", body);
+        String responseBody = response.body();
+        assertEquals("{}\n", responseBody);
     }
 
+    /**
+     *  This makes sure that we can also successfully reach the OPA health API on the "alternate", reverse-proxy based
+     *  OPA that has a URL prefix.
+     */
     @Test
     public void testOPAHealthAlternate() {
-        // This makes sure that we can also successfully reach the OPA health
-        // API on the "alternate", reverse-proxy based OPA that has a URL
-        // prefix.
-
         HttpClient client = HttpClient.newHttpClient();
-        HttpRequest req = HttpRequest.newBuilder().uri(URI.create(altAddress + "/health")).build();
-        HttpResponse<String> resp = null;
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(altAddress + "/health")).build();
+        HttpResponse<String> response = null;
 
         try {
-            resp = client.send(req, HttpResponse.BodyHandlers.ofString());
-
-        //CHECKSTYLE:OFF
+            response = client.send(request, HttpResponse.BodyHandlers.ofString());
+           //CHECKSTYLE:OFF
         } catch (Exception e) {
             //CHECKSTYLE:ON
             System.out.println("exception: " + e);
             assertNull(e);
         }
 
-        String body = resp.body();
-
-        assertEquals("{}\n", body);
+        String responseBody = response.body();
+        assertEquals("{}\n", responseBody);
     }
 
+    /**
+     * Make sure that with a simple always-allow rule, we allow all requests, using
+     * {@link OPAAuthorizationManager#check(Supplier, RequestAuthorizationContext)}.
+     */
     @Test
     public void testOPAAuthorizationManagerSimpleAllow() {
-        // Make sure that with a simple always-allow rule, we allow all
-        // requests.
-
         Authentication mockAuth = this.createMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opa = new OPAClient(address, headers);
-        AuthorizationManager<RequestAuthorizationContext> am =
-            new OPAAuthorizationManager(opa, "policy/decision_always_true");
-        AuthorizationDecision actual = am.check(this.authenticationSupplier, this.context);
-        assertEquals(actual.isGranted(), true);
-
+        OPAClient opaClient = new OPAClient(address, HEADERS);
+        OPAAuthorizationManager opaAuthorizationManager =
+                new OPAAuthorizationManager(opaClient, "policy/decision_always_true");
+        AuthorizationDecision actual = opaAuthorizationManager.check(this.authenticationSupplier, this.context);
+        assertTrue(actual.isGranted());
     }
 
+    /**
+     * Make sure that with a simple always-deny rule, we deny all requests, using
+     * {@link OPAAuthorizationManager#check(Supplier, RequestAuthorizationContext)}.
+     */
     @Test
     public void testOPAAuthorizationManagerSimpleDeny() {
-        // Make sure that with a simple always-deny rule, we deny all
-        // requests.
-
         Authentication mockAuth = this.createMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opa = new OPAClient(address, headers);
-        AuthorizationManager<RequestAuthorizationContext> am =
-            new OPAAuthorizationManager(opa, "policy/decision_always_false");
-        AuthorizationDecision actual = am.check(this.authenticationSupplier, this.context);
-        assertEquals(actual.isGranted(), false);
-
+        OPAClient opaClient = new OPAClient(address, HEADERS);
+        OPAAuthorizationManager opaAuthorizationManager =
+            new OPAAuthorizationManager(opaClient, "policy/decision_always_false");
+        AuthorizationDecision actual = opaAuthorizationManager.check(this.authenticationSupplier, this.context);
+        assertFalse(actual.isGranted());
     }
 
+    /**
+     * Make sure that with a simple always-allow rule, we allow all requests, using
+     * {@link OPAAuthorizationManager#verify(Supplier, RequestAuthorizationContext)}.
+     */
     @Test
     public void testOPAAuthorizationManagerSimpleAllowVerify() {
-        // Make sure that with a simple always-allow rule, we allow all
-        // requests, using .verify().
-
         Authentication mockAuth = this.createMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opa = new OPAClient(address, headers);
-        AuthorizationManager<RequestAuthorizationContext> am =
-            new OPAAuthorizationManager(opa, "policy/decision_always_true");
-        am.verify(this.authenticationSupplier, this.context);
-
+        OPAClient opaClient = new OPAClient(address, HEADERS);
+        OPAAuthorizationManager opaAuthorizationManager =
+            new OPAAuthorizationManager(opaClient, "policy/decision_always_true");
+        assertDoesNotThrow(() -> opaAuthorizationManager.verify(authenticationSupplier, context));
     }
 
+    /**
+     * Make sure that with a simple always-deny rule, we deny all requests, using
+     * {@link OPAAuthorizationManager#verify(Supplier, RequestAuthorizationContext)}.
+     */
     @Test
     public void testOPAAuthorizationManagerSimpleDenyVerify() {
-        // Make sure that with a simple always-deny rule, we deny all
-        // requests, using .verify()
-
         Authentication mockAuth = this.createMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opa = new OPAClient(address, headers);
-        AuthorizationManager<RequestAuthorizationContext> am =
-            new OPAAuthorizationManager(opa, "policy/decision_always_false");
-
-        assertThrows(AccessDeniedException.class, () -> {
-            am.verify(this.authenticationSupplier, this.context);
-        });
-
+        OPAClient opaClient = new OPAClient(address, HEADERS);
+        OPAAuthorizationManager opaAuthorizationManager =
+            new OPAAuthorizationManager(opaClient, "policy/decision_always_false");
+        assertThrows(AccessDeniedException.class,
+                () -> opaAuthorizationManager.verify(authenticationSupplier, context));
     }
 
+    /**
+     * By reading back the input, we can make sure the OPA input has the right structure and content.
+     */
     @Test
     public void testOPAAuthorizationManagerEcho() {
-        // By reading back the input, we can make sure the OPA input has the
-        // right structure and content.
-
-        Map<String, Object> expectData = Map.ofEntries(
-                entry("action", Map.ofEntries(
-                    entry("headers", Map.ofEntries(
+        Map<String, Object> expectedResponseContextData = Map.ofEntries(
+                entry(ACTION, Map.ofEntries(
+                    entry(ACTION_HEADERS, Map.ofEntries(
                         entry("UnitTestHeader", "123abc")
                     )),
-                    entry("name", "GET"),
-                    entry("protocol", "HTTP/1.1")
+                    entry(ACTION_NAME, "GET"),
+                    entry(ACTION_PROTOCOL, "HTTP/1.1")
                 )),
-                entry("context", Map.ofEntries(
-                    entry("host", "example.com"),
-                    entry("ip", "192.0.2.123"),
-                    entry("port", 0),
-                    entry("type", "http"),
-                    entry("data", Map.ofEntries(
+                entry(CONTEXT, Map.ofEntries(
+                    entry(CONTEXT_HOST, "example.com"),
+                    entry(CONTEXT_IP, "192.0.2.123"),
+                    entry(CONTEXT_PORT, 0),
+                    entry(CONTEXT_TYPE, OPAProperties.Request.Context.DEFAULT_TYPE),
+                    entry(CONTEXT_DATA, Map.ofEntries(
                         entry("hello", "world")
                     ))
                 )),
-                entry("resource", Map.ofEntries(
-                    entry("id", "unit/test"),
-                    entry("type", "endpoint")
+                entry(RESOURCE, Map.ofEntries(
+                    entry(RESOURCE_ID, "unit/test"),
+                    entry(RESOURCE_TYPE, OPAProperties.Request.Resource.DEFAULT_TYPE)
                 )),
-                entry("subject", Map.ofEntries(
-                    entry("authorities", List.of(
+                entry(SUBJECT, Map.ofEntries(
+                    entry(SUBJECT_AUTHORITIES, List.of(
                         Map.ofEntries(entry("authority", "ROLE_USER")),
                         Map.ofEntries(entry("authority", "ROLE_ADMIN"))
                     )),
-                    entry("details", Map.ofEntries(
+                    entry(SUBJECT_DETAILS, Map.ofEntries(
                         entry("remoteAddress", "192.0.2.123"),
                         entry("sessionId", "null")
                     )),
-                    entry("id", "testuser"),
-                    entry("type", "java_authentication")
+                    entry(SUBJECT_ID, "testuser"),
+                    entry(SUBJECT_TYPE, OPAProperties.Request.Subject.DEFAULT_TYPE)
                 ))
         );
 
-        OPAResponseContext expectCtx = new OPAResponseContext();
-        expectCtx.setReasonUser(Map.ofEntries(
+        OPAResponseContext expectedResponseContext = new OPAResponseContext();
+        expectedResponseContext.setReasonUser(Map.ofEntries(
             entry("en", "echo rule always allows"),
             entry("other", "other reason key")
         ));
-        expectCtx.setId("0");
-        expectCtx.setData(expectData);
+        expectedResponseContext.setId("0");
+        expectedResponseContext.setData(expectedResponseContextData);
 
-        OPAResponse expect = new OPAResponse();
-        expect.setDecision(true);
-        expect.setContext(expectCtx);
+        OPAResponse expectedResponse = new OPAResponse();
+        expectedResponse.setDecision(true);
+        expectedResponse.setContext(expectedResponseContext);
 
-        ContextDataProvider prov = new ConstantContextDataProvider(java.util.Map.ofEntries(
-            entry("hello", "world")
+        ContextDataProvider contextDataProvider = new ConstantContextDataProvider(Map.ofEntries(
+                entry("hello", "world")
         ));
         Authentication mockAuth = this.createMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opa = new OPAClient(address, headers);
-        OPAAuthorizationManager am = new OPAAuthorizationManager(opa, "policy/echo", prov);
-        OPAResponse actual = am.opaRequest(this.authenticationSupplier, this.context);
+        OPAClient opaClient = new OPAClient(address, HEADERS);
+        OPAAuthorizationManager opaAuthorizationManager =
+                new OPAAuthorizationManager(opaClient, "policy/echo", contextDataProvider);
+        OPAResponse actualResponse = opaAuthorizationManager.opaRequest(this.authenticationSupplier, this.context);
 
-        assertEquals(expect.getDecision(), actual.getDecision());
-        assertEquals(expect.getContext().getId(), actual.getContext().getId());
-        assertEquals(expect.getContext().getReasonUser(), actual.getContext().getReasonUser());
+        assertEquals(expectedResponse.getDecision(), actualResponse.getDecision());
+        assertEquals(expectedResponse.getContext().getId(), actualResponse.getContext().getId());
+        assertEquals(expectedResponse.getContext().getReasonUser(), actualResponse.getContext().getReasonUser());
 
-        List<String> datadiff = jsonDiff(expect.getContext().getData(), actual.getContext().getData());
+        List<String> dataDiffs = jsonDiff(expectedResponse.getContext().getData(),
+                actualResponse.getContext().getData());
 
-        System.out.printf("#### expected context data\n%s\n", jsonPretty(expectData));
-        System.out.printf("#### actual context data\n%s\n", jsonPretty(actual.getContext().getData()));
+        System.out.printf("#### expected context data\n%s\n", jsonPretty(expectedResponseContextData));
+        System.out.printf("#### actual context data\n%s\n", jsonPretty(actualResponse.getContext().getData()));
 
-        for (int i = 0; i < datadiff.size(); i++) {
-            System.out.printf("diff mismatch: %s\n", datadiff.get(i));
+        for (String dataDiff : dataDiffs) {
+            System.out.printf("diff mismatch: %s\n", dataDiff);
         }
 
-        assertEquals(0, datadiff.size());
-
-        assertEquals("echo rule always allows", actual.getReasonForDecision("en"));
-        assertEquals("other reason key", actual.getReasonForDecision("other"));
-        assertEquals("echo rule always allows", actual.getReasonForDecision("nonexistant"));
-
+        assertEquals(0, dataDiffs.size());
+        assertEquals("echo rule always allows", actualResponse.getReasonForDecision("en"));
+        assertEquals("other reason key", actualResponse.getReasonForDecision("other"));
+        assertEquals("echo rule always allows", actualResponse.getReasonForDecision("nonexistant"));
     }
 
+    /**
+     * By reading back the input, we can make sure the OPA input has the right structure and content.
+     */
     @Test
     public void testOPAAuthorizationManagerNullMetadata() {
-        // By reading back the input, we can make sure the OPA input has the
-        // right structure and content.
-
-        Map<String, Object> expectData = Map.ofEntries(
-                entry("action", Map.ofEntries(
-                    entry("headers", Map.ofEntries(
+        Map<String, Object> expectedResponseContextData = Map.ofEntries(
+                entry(ACTION, Map.ofEntries(
+                    entry(ACTION_HEADERS, Map.ofEntries(
                         entry("UnitTestHeader", "123abc")
                     )),
-                    entry("name", "GET"),
-                    entry("protocol", "HTTP/1.1")
+                    entry(ACTION_NAME, "GET"),
+                    entry(ACTION_PROTOCOL, "HTTP/1.1")
                 )),
-                entry("context", Map.ofEntries(
-                    entry("host", "example.com"),
-                    entry("ip", "192.0.2.123"),
-                    entry("port", 0),
-                    entry("type", "http"),
-                    entry("data", Map.ofEntries(
+                entry(CONTEXT, Map.ofEntries(
+                    entry(CONTEXT_HOST, "example.com"),
+                    entry(CONTEXT_IP, "192.0.2.123"),
+                    entry(CONTEXT_PORT, 0),
+                    entry(CONTEXT_TYPE, "http"),
+                    entry(CONTEXT_DATA, Map.ofEntries(
                         entry("hello", "world")
                     ))
                 )),
-                entry("resource", Map.ofEntries(
-                    entry("id", "unit/test"),
-                    entry("type", "endpoint")
+                entry(RESOURCE, Map.ofEntries(
+                    entry(RESOURCE_ID, "unit/test"),
+                    entry(RESOURCE_TYPE, "endpoint")
                 )),
-                entry("subject", Map.ofEntries(
-                    entry("id", "testuser"),
-                    entry("type", "java_authentication")
+                entry(SUBJECT, Map.ofEntries(
+                    entry(SUBJECT_ID, "testuser"),
+                    entry(SUBJECT_TYPE, "java_authentication")
                 ))
         );
 
-        OPAResponseContext expectCtx = new OPAResponseContext();
-        expectCtx.setReasonUser(Map.ofEntries(
+        OPAResponseContext expectedResponseContext = new OPAResponseContext();
+        expectedResponseContext.setReasonUser(Map.ofEntries(
             entry("en", "echo rule always allows"),
             entry("other", "other reason key")
         ));
-        expectCtx.setId("0");
-        expectCtx.setData(expectData);
+        expectedResponseContext.setId("0");
+        expectedResponseContext.setData(expectedResponseContextData);
 
-        OPAResponse expect = new OPAResponse();
-        expect.setDecision(true);
-        expect.setContext(expectCtx);
+        OPAResponse expectedResponse = new OPAResponse();
+        expectedResponse.setDecision(true);
+        expectedResponse.setContext(expectedResponseContext);
 
-        ContextDataProvider prov = new ConstantContextDataProvider(java.util.Map.ofEntries(
+        ContextDataProvider contextDataProvider = new ConstantContextDataProvider(Map.ofEntries(
             entry("hello", "world")
         ));
         Authentication mockAuth = this.createNullMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opa = new OPAClient(address, headers);
-        OPAAuthorizationManager am = new OPAAuthorizationManager(opa, "policy/echo", prov);
-        OPAResponse actual = am.opaRequest(this.authenticationSupplier, this.context);
+        OPAClient opaClient = new OPAClient(address, HEADERS);
+        OPAAuthorizationManager opaAuthorizationManager =
+                new OPAAuthorizationManager(opaClient, "policy/echo", contextDataProvider);
+        OPAResponse actualResponse = opaAuthorizationManager.opaRequest(this.authenticationSupplier, this.context);
 
-        assertEquals(expect.getDecision(), actual.getDecision());
-        assertEquals(expect.getContext().getId(), actual.getContext().getId());
-        assertEquals(expect.getContext().getReasonUser(), actual.getContext().getReasonUser());
+        assertEquals(expectedResponse.getDecision(), actualResponse.getDecision());
+        assertEquals(expectedResponse.getContext().getId(), actualResponse.getContext().getId());
+        assertEquals(expectedResponse.getContext().getReasonUser(), actualResponse.getContext().getReasonUser());
 
-        List<String> datadiff = jsonDiff(expect.getContext().getData(), actual.getContext().getData());
+        List<String> dataDiffs = jsonDiff(expectedResponse.getContext().getData(),
+                actualResponse.getContext().getData());
 
-        System.out.printf("#### expected context data\n%s\n", jsonPretty(expectData));
-        System.out.printf("#### actual context data\n%s\n", jsonPretty(actual.getContext().getData()));
+        System.out.printf("#### expected context data\n%s\n", jsonPretty(expectedResponseContextData));
+        System.out.printf("#### actual context data\n%s\n", jsonPretty(actualResponse.getContext().getData()));
 
-        for (int i = 0; i < datadiff.size(); i++) {
-            System.out.printf("diff mismatch: %s\n", datadiff.get(i));
+        for (String dataDiff : dataDiffs) {
+            System.out.printf("diff mismatch: %s\n", dataDiff);
         }
 
-        assertEquals(0, datadiff.size());
-
-        assertEquals("echo rule always allows", actual.getReasonForDecision("en"));
-        assertEquals("other reason key", actual.getReasonForDecision("other"));
-        assertEquals("echo rule always allows", actual.getReasonForDecision("nonexistant"));
-
+        assertEquals(0, dataDiffs.size());
+        assertEquals("echo rule always allows", actualResponse.getReasonForDecision("en"));
+        assertEquals("other reason key", actualResponse.getReasonForDecision("other"));
+        assertEquals("echo rule always allows", actualResponse.getReasonForDecision("nonexistant"));
     }
 
     @Nested
@@ -547,12 +558,12 @@ class OPAAuthorizationManagerTest {
         public static class CustomOPAConfig {
             @Bean
             public OPAClient opaClient(OPAProperties opaProperties) {
-                return new OPAClient(opaProperties.getUrl(), headers);
+                return new OPAClient(opaProperties.getUrl(), HEADERS);
             }
 
             @Bean
             public OPAPathSelector opaPathSelector() {
-                return (authentication, requestAuthorizationContext, opaRequestBody) -> {
+                return (authentication, requestAuthorizationContext, opaInput) -> {
                     if (authentication.getPrincipal().equals("testuser_allowed")) {
                         return "policy/decision_always_true";
                     } else {
