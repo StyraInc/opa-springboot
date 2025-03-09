@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest(classes = OPAAutoConfiguration.class)
 public class OPAAutoConfigurationTest {
 
-    @TestPropertySource(properties = { "opa.response.context.reason-key=fr" })
+    @TestPropertySource(properties = {"opa.response.context.reason-key=fr"})
     @Nested
     public class DefaultOPAAutoConfigurationTest {
 

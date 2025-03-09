@@ -41,7 +41,7 @@ and used under MIT license:
     <property name="max" value="120" />
   </module>
   <module name="TreeWalker">
-    <!-- allow CHECKSTYLE:OFF comments to work -->
+    <!-- MODIFIED: allow CHECKSTYLE:OFF comments to work -->
     <module name="SuppressionCommentFilter"/>
     <!-- Block Checks -->
     <module name="AvoidNestedBlocks" />
@@ -71,7 +71,7 @@ and used under MIT license:
     <module name="IllegalCatch" />
     <module name="IllegalInstantiation" />
     <module name="IllegalThrows" />
-    <!--<module name="IllegalType" /> - disabled because we need to use HashMap -->
+    <!-- MODIFIED: <module name="IllegalType" /> - disabled because we need to use HashMap -->
     <module name="InnerAssignment" />
     <module name="MagicNumber">
       <property name="ignoreFieldDeclaration" value="true" />
@@ -82,8 +82,9 @@ and used under MIT license:
     <module name="ModifiedControlVariable" />
     <module name="MultipleVariableDeclarations" />
     <module name="NestedForDepth" />
+    <!-- MODIFIED: added `max` property: -->
     <module name="NestedIfDepth"><property name="max" value="2"/></module>
-    <module name="NestedTryDepth"/>
+    <module name="NestedTryDepth" />
     <module name="NoClone" />
     <module name="NoFinalizer" />
     <module name="OneStatementPerLine" />
@@ -98,6 +99,7 @@ and used under MIT license:
     <!-- Imports -->
     <module name="IllegalImport" />
     <module name="ImportOrder">
+      <!-- MODIFIED: added `group`, `ordered`, & `separated` props, changed `option` prop, and removed `separatedStaticGroups` prop: -->
       <property name="groups" value="*,javax,java"/>
       <property name="ordered" value="true"/>
       <property name="separated" value="true"/>
@@ -119,7 +121,7 @@ and used under MIT license:
     <module name="ModifierOrder" />
     <module name="RedundantModifier" />
     <!-- Naming conventions -->
-    <!--<module name="ConstantName" /> - disabled because lowercase constant names are desired -->
+    <!-- MODIFIED: <module name="ConstantName" /> - disabled because lowercase constant names are desired -->
     <module name="LocalFinalVariableName" />
     <module name="LocalVariableName" />
     <module name="MemberName" />

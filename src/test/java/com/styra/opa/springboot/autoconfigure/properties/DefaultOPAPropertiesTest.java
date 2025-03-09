@@ -27,8 +27,8 @@ public class DefaultOPAPropertiesTest {
         assertNotNull(opaProperties.getRequest().getContext());
         assertEquals(OPAProperties.Request.Context.DEFAULT_TYPE, opaProperties.getRequest().getContext().getType());
         assertEquals(OPAProperties.Request.Subject.DEFAULT_TYPE,
-                opaProperties.getRequest().getSubject().getType());
+            opaProperties.getRequest().getSubject().getType());
         assertEquals(OPAProperties.Response.Context.DEFAULT_REASON_KEY,
-                opaProperties.getResponse().getContext().getReasonKey());
+            opaProperties.getResponse().getContext().getReasonKey());
     }
 }

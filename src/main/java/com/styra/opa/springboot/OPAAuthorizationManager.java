@@ -179,13 +179,15 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
         try {
             OPAResponse opaResponse;
             String selectedOPAPath = opaPathSelector != null
-                    ? opaPathSelector.selectPath(authenticationSupplier.get(), object, input) : opaPath;
+                ? opaPathSelector.selectPath(authenticationSupplier.get(), object, input) : opaPath;
             if (selectedOPAPath != null) {
                 LOGGER.trace("OPA path is: {}", selectedOPAPath);
-                opaResponse = opaClient.evaluate(selectedOPAPath, input, new TypeReference<>() {});
+                opaResponse = opaClient.evaluate(selectedOPAPath, input, new TypeReference<>() {
+                });
             } else {
                 LOGGER.trace("Using default OPA path");
-                opaResponse = opaClient.evaluate(input, new TypeReference<>() {});
+                opaResponse = opaClient.evaluate(input, new TypeReference<>() {
+                });
             }
             LOGGER.trace("OPA response is: {}", opaResponse);
             return opaResponse;
@@ -243,17 +245,17 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
         nullablePut(subject, SUBJECT_AUTHORITIES, subjectAuthorities);
 
         return Map.ofEntries(
-                entry(SUBJECT, subject),
-                entry(RESOURCE, Map.ofEntries(
-                        entry(RESOURCE_TYPE, opaProperties.getRequest().getResource().getType()),
-                        entry(RESOURCE_ID, resourceId)
-                )),
-                entry(ACTION, Map.ofEntries(
-                        entry(ACTION_NAME, actionName),
-                        entry(ACTION_PROTOCOL, actionProtocol),
-                        entry(ACTION_HEADERS, actionHeaders)
-                )),
-                entry(CONTEXT, context)
+            entry(SUBJECT, subject),
+            entry(RESOURCE, Map.ofEntries(
+                entry(RESOURCE_TYPE, opaProperties.getRequest().getResource().getType()),
+                entry(RESOURCE_ID, resourceId)
+            )),
+            entry(ACTION, Map.ofEntries(
+                entry(ACTION_NAME, actionName),
+                entry(ACTION_PROTOCOL, actionProtocol),
+                entry(ACTION_HEADERS, actionHeaders)
+            )),
+            entry(CONTEXT, context)
         );
     }
 
