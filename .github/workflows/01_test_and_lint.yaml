@@ -23,7 +23,7 @@ jobs:
         with:
           report_paths: "**/build/test-results/test/TEST-*.xml"
       - name: Publish Checkstyle report
-        uses: Juuxel/publish-checkstyle-report@v1
+        uses: Juuxel/publish-checkstyle-report@v2
         if: ${{ failure() || success() }}
         with:
           # required: The glob paths to report XML files as a multiline string
