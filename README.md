@@ -73,6 +73,7 @@ opa:
         context:
             reason-key: de # Key to search for decision reasons in the response. Default is "en".
 ```
+
 ### OPAPathSelector
 By default, OPAAuthorizationManager does not use any path when calling OPA (evaluating policies). Clients could define
 an `OPAPathSelector` bean, which could select paths based on the `Authentication`, `RequestAuthorizationContext`, or
@@ -94,6 +95,111 @@ public class OPAConfig {
                 return "default/main";
             }
         };
+    }
+}
+```
+
+### OPAInput*Customizers
+OPA `input` is a `Map<String, Object>` which will be sent to the
+[Get a Document (with Input) endpoint](https://www.openpolicyagent.org/docs/latest/rest-api/#get-a-document-with-input)
+as the `input` field in the request body and is accessible in OPA policies as the
+[input variable](https://www.openpolicyagent.org/docs/latest/philosophy/#the-opa-document-model). To enable clients to
+customize different parts of `input` (`subject`, `resource`, `action`, and `context`), `OPAInput*Customizer` beans
+could be defined. After applying `input` customization, `input` will be validated to ensure it at least contains these
+keys with not-null values:
+- `resource.[type, id]`
+- `action.name`
+- `subject.[type, id]`
+- `context.type`, if `context` exists
+
+#### OPAInputSubjectCustomizer
+Clients could define an `OPAInputSubjectCustomizer` bean to customize the `subject` part of the `input`. `subject` map
+must at least contain `type` and `id` keys with not-null values, though their values could be modified.
+
+Example `OPAInputSubjectCustomizer` bean:
+```java
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT_AUTHORITIES;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT_TYPE;
+
+@Configuration
+public class OPAConfig {
+    @Bean
+    public OPAInputSubjectCustomizer opaInputSubjectCustomizer() {
+        return (authentication, requestAuthorizationContext, subject) -> {
+            var customSubject = new HashMap<>(subject);
+            customSubject.remove(SUBJECT_AUTHORITIES); // Remove an existing attribute.
+            customSubject.put(SUBJECT_TYPE, "oauth2_resource_owner"); // Change an existing attribute.
+            customSubject.put("subject_key", "subject_value"); // Add a new attribute.
+            return customSubject;
+        };
+    }
+}
+```
+
+#### OPAInputResourceCustomizer
+Clients could define an `OPAInputResourceCustomizer` bean to customize the `resource` part of the `input`. `resource`
+map must at least contain `type` and `id` keys with not-null values, though their values could be modified.
+
+Example `OPAInputResourceCustomizer` bean:
+```java
+import static com.styra.opa.springboot.input.InputConstants.RESOURCE;
+import static com.styra.opa.springboot.input.InputConstants.RESOURCE_TYPE;
+
+@Configuration
+public class OPAConfig {
+    @Bean
+    public OPAInputResourceCustomizer opaInputResourceCustomizer() {
+        return (authentication, requestAuthorizationContext, resource) -> {
+            var customResource = new HashMap<>(resource);
+            customResource.put(RESOURCE_TYPE, "stomp_endpoint"); // Change an existing attribute.
+            customResource.put("resource_key", "resource_value"); // Add a new attribute.
+            return customResource;
+        };
+    }
+}
+```
+
+#### OPAInputActionCustomizer
+Clients could define an `OPAInputActionCustomizer` bean to customize the `action` part of the `input`. `action` map
+must at least contain `name` key with a not-null value, though its value could be modified.
+
+Example `OPAInputActionCustomizer` bean:
+```java
+import static com.styra.opa.springboot.input.InputConstants.ACTION;
+import static com.styra.opa.springboot.input.InputConstants.ACTION_HEADERS;
+import static com.styra.opa.springboot.input.InputConstants.ACTION_NAME;
+
+@Configuration
+public class OPAConfig {
+    @Bean
+    public OPAInputActionCustomizer opaInputActionCustomizer() {
+        return (authentication, requestAuthorizationContext, action) -> {
+            var customAction = new HashMap<>(action);
+            customAction.remove(ACTION_HEADERS); // Remove an existing attribute.
+            customAction.put(ACTION_NAME, "read"); // Change an existing attribute.
+            customAction.put("action_key", "action_value"); // Add a new attribute.
+            return customAction;
+        };
+    }
+}
+```
+
+#### OPAInputContextCustomizer
+Clients could define an `OPAInputContextCustomizer` bean to customize the `context` part of the `input`. `context` map
+could be null; however if it is not-null, it must at least contain `type` key with a not-null value, though its value
+could be modified.
+
+Example `OPAInputContextCustomizer` bean which makes `context` null (removes it from `input` map):
+```java
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT_TYPE;
+
+@Configuration
+public class OPAConfig {
+    @Bean
+    public OPAInputContextCustomizer opaInputContextCustomizer() {
+        return (authentication, requestAuthorizationContext, context) -> null;
     }
 }
 ```

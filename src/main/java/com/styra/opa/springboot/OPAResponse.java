@@ -26,9 +26,9 @@ public class OPAResponse {
      * permits), then it returns null.
      */
     public String getReasonForDecision(String searchKey) {
-        if (this.context == null) {
+        if (context == null) {
             return null;
         }
-        return this.context.getReasonForDecision(searchKey);
+        return context.getReasonForDecision(searchKey);
     }
 }

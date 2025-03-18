@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,7 +25,7 @@ public class OPAPathSelectorTest extends BaseIntegrationTest {
 
     @Test
     public void testOPAPathSelectorAlwaysTruePolicy() {
-        Authentication mockAuth = createMockAuthentication();
+        var mockAuth = createMockAuthentication();
         when(mockAuth.getPrincipal()).thenReturn("testuser_allowed");
         when(authenticationSupplier.get()).thenReturn(mockAuth);
         assertDoesNotThrow(() -> opaAuthorizationManager.verify(authenticationSupplier, context));
@@ -34,7 +33,7 @@ public class OPAPathSelectorTest extends BaseIntegrationTest {
 
     @Test
     public void testOPAPathSelectorAlwaysFalsePolicy() {
-        Authentication mockAuth = createMockAuthentication();
+        var mockAuth = createMockAuthentication();
         when(mockAuth.getPrincipal()).thenReturn("testuser_denied");
         when(authenticationSupplier.get()).thenReturn(mockAuth);
         assertThrows(AccessDeniedException.class,

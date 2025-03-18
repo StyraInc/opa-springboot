@@ -4,6 +4,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.styra.opa.OPAClient;
 import com.styra.opa.OPAException;
 import com.styra.opa.springboot.autoconfigure.OPAProperties;
+import com.styra.opa.springboot.input.OPAInputActionCustomizer;
+import com.styra.opa.springboot.input.OPAInputContextCustomizer;
+import com.styra.opa.springboot.input.OPAInputResourceCustomizer;
+import com.styra.opa.springboot.input.OPAInputSubjectCustomizer;
+import com.styra.opa.springboot.input.OPAInputValidator;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -24,6 +29,24 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.styra.opa.springboot.input.InputConstants.ACTION;
+import static com.styra.opa.springboot.input.InputConstants.ACTION_HEADERS;
+import static com.styra.opa.springboot.input.InputConstants.ACTION_NAME;
+import static com.styra.opa.springboot.input.InputConstants.ACTION_PROTOCOL;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT_DATA;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT_HOST;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT_IP;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT_PORT;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT_TYPE;
+import static com.styra.opa.springboot.input.InputConstants.RESOURCE;
+import static com.styra.opa.springboot.input.InputConstants.RESOURCE_ID;
+import static com.styra.opa.springboot.input.InputConstants.RESOURCE_TYPE;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT_AUTHORITIES;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT_DETAILS;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT_ID;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT_TYPE;
 import static java.util.Map.entry;
 
 /**
@@ -43,24 +66,6 @@ import static java.util.Map.entry;
 @Component
 public class OPAAuthorizationManager implements AuthorizationManager<RequestAuthorizationContext> {
 
-    static final String CONTEXT_TYPE = "type";
-    static final String CONTEXT_HOST = "host";
-    static final String CONTEXT_IP = "ip";
-    static final String CONTEXT_PORT = "port";
-    static final String CONTEXT_DATA = "data";
-    static final String SUBJECT_TYPE = "type";
-    static final String SUBJECT_ID = "id";
-    static final String SUBJECT_DETAILS = "details";
-    static final String SUBJECT_AUTHORITIES = "authorities";
-    static final String SUBJECT = "subject";
-    static final String RESOURCE = "resource";
-    static final String ACTION = "action";
-    static final String RESOURCE_TYPE = "type";
-    static final String RESOURCE_ID = "id";
-    static final String ACTION_NAME = "name";
-    static final String ACTION_PROTOCOL = "protocol";
-    static final String ACTION_HEADERS = "headers";
-    static final String CONTEXT = "context";
     private static final Logger LOGGER = LoggerFactory.getLogger(OPAAuthorizationManager.class);
 
     private final String opaPath;
@@ -72,6 +77,16 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
     private OPAProperties opaProperties;
     @Autowired
     private OPAPathSelector opaPathSelector;
+    @Autowired(required = false)
+    private OPAInputSubjectCustomizer opaInputSubjectCustomizer;
+    @Autowired(required = false)
+    private OPAInputResourceCustomizer opaInputResourceCustomizer;
+    @Autowired(required = false)
+    private OPAInputActionCustomizer opaInputActionCustomizer;
+    @Autowired(required = false)
+    private OPAInputContextCustomizer opaInputContextCustomizer;
+    @Autowired
+    private OPAInputValidator opaInputValidator;
 
     public OPAAuthorizationManager() {
         this(null, null, null);
@@ -199,6 +214,8 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
 
     private Map<String, Object> makeRequestInput(Supplier<Authentication> authenticationSupplier,
                                                  RequestAuthorizationContext object) {
+        HttpServletRequest request = object.getRequest();
+
         Object subjectId = null;
         Object subjectDetails = null;
         Collection<? extends GrantedAuthority> subjectAuthorities = null;
@@ -208,9 +225,23 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
             subjectDetails = authentication.getDetails();
             subjectAuthorities = authentication.getAuthorities();
         }
+        Map<String, Object> subject = new HashMap<>();
+        nullablePut(subject, SUBJECT_TYPE, opaProperties.getRequest().getSubject().getType());
+        nullablePut(subject, SUBJECT_ID, subjectId);
+        nullablePut(subject, SUBJECT_DETAILS, subjectDetails);
+        nullablePut(subject, SUBJECT_AUTHORITIES, subjectAuthorities);
+        if (opaInputSubjectCustomizer != null) {
+            subject = opaInputSubjectCustomizer.customize(authentication, object, subject);
+        }
 
-        HttpServletRequest request = object.getRequest();
         String resourceId = request.getServletPath();
+        Map<String, Object> resource = Map.ofEntries(
+            entry(RESOURCE_TYPE, opaProperties.getRequest().getResource().getType()),
+            entry(RESOURCE_ID, resourceId)
+        );
+        if (opaInputResourceCustomizer != null) {
+            resource = opaInputResourceCustomizer.customize(authentication, object, resource);
+        }
 
         String actionName = request.getMethod();
         String actionProtocol = request.getProtocol();
@@ -223,11 +254,18 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
                 actionHeaders.put(headerName, headerValue);
             }
         }
+        Map<String, Object> action = Map.ofEntries(
+            entry(ACTION_NAME, actionName),
+            entry(ACTION_PROTOCOL, actionProtocol),
+            entry(ACTION_HEADERS, actionHeaders)
+        );
+        if (opaInputActionCustomizer != null) {
+            action = opaInputActionCustomizer.customize(authentication, object, action);
+        }
 
         String contextHost = request.getRemoteHost();
         String contextIp = request.getRemoteAddr();
         Integer contextPort = request.getRemotePort();
-
         Map<String, Object> context = new HashMap<>();
         nullablePut(context, CONTEXT_TYPE, opaProperties.getRequest().getContext().getType());
         nullablePut(context, CONTEXT_HOST, contextHost);
@@ -237,26 +275,18 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
             Object contextData = contextDataProvider.getContextData(authenticationSupplier, object);
             context.put(CONTEXT_DATA, contextData);
         }
+        if (opaInputContextCustomizer != null) {
+            context = opaInputContextCustomizer.customize(authentication, object, context);
+        }
 
-        Map<String, Object> subject = new HashMap<>();
-        nullablePut(subject, SUBJECT_TYPE, opaProperties.getRequest().getSubject().getType());
-        nullablePut(subject, SUBJECT_ID, subjectId);
-        nullablePut(subject, SUBJECT_DETAILS, subjectDetails);
-        nullablePut(subject, SUBJECT_AUTHORITIES, subjectAuthorities);
+        Map<String, Object> input = context != null
+            ? Map.of(SUBJECT, subject, RESOURCE, resource, ACTION, action, CONTEXT, context)
+            : Map.of(SUBJECT, subject, RESOURCE, resource, ACTION, action);
 
-        return Map.ofEntries(
-            entry(SUBJECT, subject),
-            entry(RESOURCE, Map.ofEntries(
-                entry(RESOURCE_TYPE, opaProperties.getRequest().getResource().getType()),
-                entry(RESOURCE_ID, resourceId)
-            )),
-            entry(ACTION, Map.ofEntries(
-                entry(ACTION_NAME, actionName),
-                entry(ACTION_PROTOCOL, actionProtocol),
-                entry(ACTION_HEADERS, actionHeaders)
-            )),
-            entry(CONTEXT, context)
-        );
+        Optional.ofNullable(opaInputValidator).ifPresent(
+            validator -> validator.validate(authentication, object, input));
+
+        return input;
     }
 
     /**
