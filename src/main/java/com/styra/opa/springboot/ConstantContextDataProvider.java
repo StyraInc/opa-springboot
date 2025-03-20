@@ -20,6 +20,6 @@ public class ConstantContextDataProvider implements ContextDataProvider {
 
     @Override
     public Object getContextData(Supplier<Authentication> authentication, RequestAuthorizationContext object) {
-        return this.data;
+        return data;
     }
 }

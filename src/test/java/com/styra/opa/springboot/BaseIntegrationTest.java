@@ -3,6 +3,7 @@ package com.styra.opa.springboot;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.styra.opa.springboot.autoconfigure.OPAAutoConfiguration;
+import com.styra.opa.springboot.autoconfigure.OPAProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,22 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.styra.opa.springboot.input.InputConstants.ACTION;
+import static com.styra.opa.springboot.input.InputConstants.ACTION_HEADERS;
+import static com.styra.opa.springboot.input.InputConstants.ACTION_NAME;
+import static com.styra.opa.springboot.input.InputConstants.ACTION_PROTOCOL;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT_DATA;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT_HOST;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT_IP;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT_PORT;
+import static com.styra.opa.springboot.input.InputConstants.CONTEXT_TYPE;
+import static com.styra.opa.springboot.input.InputConstants.RESOURCE;
+import static com.styra.opa.springboot.input.InputConstants.RESOURCE_ID;
+import static com.styra.opa.springboot.input.InputConstants.RESOURCE_TYPE;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT_ID;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT_TYPE;
 import static java.util.Map.entry;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -95,7 +112,7 @@ public abstract class BaseIntegrationTest {
         MockitoAnnotations.openMocks(this);
         when(context.getRequest()).thenReturn(httpServletRequest);
 
-        HashMap<String, String> mockHeaders = new HashMap<>();
+        Map<String, String> mockHeaders = new HashMap<>();
         mockHeaders.put("UnitTestHeader", "123abc");
         when(httpServletRequest.getHeaderNames()).thenReturn(Collections.enumeration(mockHeaders.keySet()));
         when(httpServletRequest.getHeader(anyString())).thenAnswer(invocation -> {
@@ -120,16 +137,16 @@ public abstract class BaseIntegrationTest {
     }
 
     protected Authentication createMockAuthentication() {
-        Authentication mockAuth = mock(Authentication.class);
+        var mockAuth = mock(Authentication.class);
         when(mockAuth.getPrincipal()).thenReturn("testuser");
         when(mockAuth.getCredentials()).thenReturn("letmein");
 
-        WebAuthenticationDetails details = new WebAuthenticationDetails(httpServletRequest);
+        var details = new WebAuthenticationDetails(httpServletRequest);
         when(mockAuth.getDetails()).thenReturn(details);
 
-        GrantedAuthority authority1 = new SimpleGrantedAuthority("ROLE_USER");
-        GrantedAuthority authority2 = new SimpleGrantedAuthority("ROLE_ADMIN");
-        Collection<? extends GrantedAuthority> authorities = Arrays.asList(authority1, authority2);
+        var authority1 = new SimpleGrantedAuthority("ROLE_USER");
+        var authority2 = new SimpleGrantedAuthority("ROLE_ADMIN");
+        Collection<GrantedAuthority> authorities = Arrays.asList(authority1, authority2);
         doReturn(authorities).when(mockAuth).getAuthorities();
 
         when(mockAuth.isAuthenticated()).thenReturn(true);
@@ -137,12 +154,41 @@ public abstract class BaseIntegrationTest {
         return mockAuth;
     }
 
+    protected Map<String, Object> createNullMockAuthOPAInput() {
+        return Map.ofEntries(
+            entry(ACTION, Map.ofEntries(
+                entry(ACTION_HEADERS, Map.ofEntries(
+                    entry("UnitTestHeader", "123abc")
+                )),
+                entry(ACTION_NAME, "GET"),
+                entry(ACTION_PROTOCOL, "HTTP/1.1")
+            )),
+            entry(CONTEXT, Map.ofEntries(
+                entry(CONTEXT_HOST, "example.com"),
+                entry(CONTEXT_IP, "192.0.2.123"),
+                entry(CONTEXT_PORT, 0),
+                entry(CONTEXT_TYPE, OPAProperties.Request.Context.DEFAULT_TYPE),
+                entry(CONTEXT_DATA, Map.ofEntries(
+                    entry("hello", "world")
+                ))
+            )),
+            entry(RESOURCE, Map.ofEntries(
+                entry(RESOURCE_ID, "unit/test"),
+                entry(RESOURCE_TYPE, OPAProperties.Request.Resource.DEFAULT_TYPE)
+            )),
+            entry(SUBJECT, Map.ofEntries(
+                entry(SUBJECT_ID, "testuser"),
+                entry(SUBJECT_TYPE, OPAProperties.Request.Subject.DEFAULT_TYPE)
+            ))
+        );
+    }
+
     /**
      * This is used to create a mock {@link Authentication} object where most of the fields are null, to resolve
      * exceptions when optional fields are omitted.
      */
     protected Authentication createNullMockAuthentication() {
-        Authentication mockAuth = mock(Authentication.class);
+        var mockAuth = mock(Authentication.class);
         when(mockAuth.getPrincipal()).thenReturn("testuser");
         when(mockAuth.getCredentials()).thenReturn(null);
         when(mockAuth.getDetails()).thenReturn(null);
@@ -159,7 +205,7 @@ public abstract class BaseIntegrationTest {
      * Note that this does stringify all JSON types, including null, so there could be some slight shadowing problems.
      */
     protected String jsonGet(Object root, String path) {
-        JsonNode jsonRoot = this.objectMapper.valueToTree(root);
+        var jsonRoot = objectMapper.valueToTree(root);
         return jsonRoot.at(path).asText();
     }
 
@@ -167,7 +213,7 @@ public abstract class BaseIntegrationTest {
      * List all JSON paths found under the object.
      */
     protected List<String> jsonList(Object root) {
-        JsonNode jsonRoot = this.objectMapper.valueToTree(root);
+        var jsonRoot = objectMapper.valueToTree(root);
         List<String> paths = new ArrayList<>();
         jsonList(jsonRoot, "", paths);
         return paths;

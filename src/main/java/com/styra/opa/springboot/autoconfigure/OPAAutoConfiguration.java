@@ -3,6 +3,7 @@ package com.styra.opa.springboot.autoconfigure;
 import com.styra.opa.OPAClient;
 import com.styra.opa.springboot.OPAAuthorizationManager;
 import com.styra.opa.springboot.OPAPathSelector;
+import com.styra.opa.springboot.input.OPAInputValidator;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -46,5 +47,13 @@ public class OPAAutoConfiguration {
     @ConditionalOnMissingBean(OPAAuthorizationManager.class)
     public OPAAuthorizationManager opaAuthorizationManager(OPAClient opaClient, OPAProperties opaProperties) {
         return new OPAAuthorizationManager(opaClient, opaProperties.getPath());
+    }
+
+    /**
+     * Create an {@link OPAInputValidator}.
+     */
+    @Bean
+    public OPAInputValidator opaInputValidator() {
+        return new OPAInputValidator();
     }
 }

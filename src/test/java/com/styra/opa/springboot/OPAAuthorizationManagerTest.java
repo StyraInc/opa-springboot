@@ -1,39 +1,22 @@
 package com.styra.opa.springboot;
 
 import com.styra.opa.OPAClient;
-import com.styra.opa.springboot.autoconfigure.OPAProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authorization.AuthorizationDecision;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static com.styra.opa.springboot.OPAAuthorizationManager.ACTION;
-import static com.styra.opa.springboot.OPAAuthorizationManager.ACTION_HEADERS;
-import static com.styra.opa.springboot.OPAAuthorizationManager.ACTION_NAME;
-import static com.styra.opa.springboot.OPAAuthorizationManager.ACTION_PROTOCOL;
-import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT;
-import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT_DATA;
-import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT_HOST;
-import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT_IP;
-import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT_PORT;
-import static com.styra.opa.springboot.OPAAuthorizationManager.CONTEXT_TYPE;
-import static com.styra.opa.springboot.OPAAuthorizationManager.RESOURCE;
-import static com.styra.opa.springboot.OPAAuthorizationManager.RESOURCE_ID;
-import static com.styra.opa.springboot.OPAAuthorizationManager.RESOURCE_TYPE;
-import static com.styra.opa.springboot.OPAAuthorizationManager.SUBJECT;
-import static com.styra.opa.springboot.OPAAuthorizationManager.SUBJECT_AUTHORITIES;
-import static com.styra.opa.springboot.OPAAuthorizationManager.SUBJECT_DETAILS;
-import static com.styra.opa.springboot.OPAAuthorizationManager.SUBJECT_ID;
-import static com.styra.opa.springboot.OPAAuthorizationManager.SUBJECT_TYPE;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT_AUTHORITIES;
+import static com.styra.opa.springboot.input.InputConstants.SUBJECT_DETAILS;
 import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,8 +33,8 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
      */
     @Test
     public void testOPAHealth() {
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(address + "/health")).build();
+        var client = HttpClient.newHttpClient();
+        var request = HttpRequest.newBuilder().uri(URI.create(address + "/health")).build();
         HttpResponse<String> response = null;
 
         try {
@@ -63,7 +46,7 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
             assertNull(e);
         }
 
-        String responseBody = response.body();
+        var responseBody = response.body();
         assertEquals("{}\n", responseBody);
     }
 
@@ -73,8 +56,8 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
      */
     @Test
     public void testOPAHealthAlternate() {
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(altAddress + "/health")).build();
+        var client = HttpClient.newHttpClient();
+        var request = HttpRequest.newBuilder().uri(URI.create(altAddress + "/health")).build();
         HttpResponse<String> response = null;
 
         try {
@@ -86,7 +69,7 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
             assertNull(e);
         }
 
-        String responseBody = response.body();
+        var responseBody = response.body();
         assertEquals("{}\n", responseBody);
     }
 
@@ -96,12 +79,11 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
      */
     @Test
     public void testOPAAuthorizationManagerSimpleAllow() {
-        Authentication mockAuth = this.createMockAuthentication();
+        var mockAuth = createMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opaClient = new OPAClient(address, HEADERS);
-        OPAAuthorizationManager opaAuthorizationManager =
-            new OPAAuthorizationManager(opaClient, "policy/decision_always_true");
-        AuthorizationDecision actual = opaAuthorizationManager.check(this.authenticationSupplier, this.context);
+        var opaClient = new OPAClient(address, HEADERS);
+        var opaAuthorizationManager = new OPAAuthorizationManager(opaClient, "policy/decision_always_true");
+        var actual = opaAuthorizationManager.check(authenticationSupplier, context);
         assertTrue(actual.isGranted());
     }
 
@@ -111,12 +93,11 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
      */
     @Test
     public void testOPAAuthorizationManagerSimpleDeny() {
-        Authentication mockAuth = this.createMockAuthentication();
+        var mockAuth = createMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opaClient = new OPAClient(address, HEADERS);
-        OPAAuthorizationManager opaAuthorizationManager =
-            new OPAAuthorizationManager(opaClient, "policy/decision_always_false");
-        AuthorizationDecision actual = opaAuthorizationManager.check(this.authenticationSupplier, this.context);
+        var opaClient = new OPAClient(address, HEADERS);
+        var opaAuthorizationManager = new OPAAuthorizationManager(opaClient, "policy/decision_always_false");
+        var actual = opaAuthorizationManager.check(authenticationSupplier, context);
         assertFalse(actual.isGranted());
     }
 
@@ -126,11 +107,10 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
      */
     @Test
     public void testOPAAuthorizationManagerSimpleAllowVerify() {
-        Authentication mockAuth = this.createMockAuthentication();
+        var mockAuth = createMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opaClient = new OPAClient(address, HEADERS);
-        OPAAuthorizationManager opaAuthorizationManager =
-            new OPAAuthorizationManager(opaClient, "policy/decision_always_true");
+        var opaClient = new OPAClient(address, HEADERS);
+        var opaAuthorizationManager = new OPAAuthorizationManager(opaClient, "policy/decision_always_true");
         assertDoesNotThrow(() -> opaAuthorizationManager.verify(authenticationSupplier, context));
     }
 
@@ -140,11 +120,10 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
      */
     @Test
     public void testOPAAuthorizationManagerSimpleDenyVerify() {
-        Authentication mockAuth = this.createMockAuthentication();
+        var mockAuth = createMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opaClient = new OPAClient(address, HEADERS);
-        OPAAuthorizationManager opaAuthorizationManager =
-            new OPAAuthorizationManager(opaClient, "policy/decision_always_false");
+        var opaClient = new OPAClient(address, HEADERS);
+        var opaAuthorizationManager = new OPAAuthorizationManager(opaClient, "policy/decision_always_false");
         assertThrows(AccessDeniedException.class,
             () -> opaAuthorizationManager.verify(authenticationSupplier, context));
     }
@@ -154,42 +133,21 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
      */
     @Test
     public void testOPAAuthorizationManagerEcho() {
-        Map<String, Object> expectedResponseContextData = Map.ofEntries(
-            entry(ACTION, Map.ofEntries(
-                entry(ACTION_HEADERS, Map.ofEntries(
-                    entry("UnitTestHeader", "123abc")
-                )),
-                entry(ACTION_NAME, "GET"),
-                entry(ACTION_PROTOCOL, "HTTP/1.1")
+        Map<String, Object> expectedResponseContextData = new HashMap<>(createNullMockAuthOPAInput());
+        Map<String, Object> subject = new HashMap<>((Map<String, Object>) expectedResponseContextData.get(SUBJECT));
+        subject.putAll(Map.ofEntries(
+            entry(SUBJECT_AUTHORITIES, List.of(
+                Map.ofEntries(entry("authority", "ROLE_USER")),
+                Map.ofEntries(entry("authority", "ROLE_ADMIN"))
             )),
-            entry(CONTEXT, Map.ofEntries(
-                entry(CONTEXT_HOST, "example.com"),
-                entry(CONTEXT_IP, "192.0.2.123"),
-                entry(CONTEXT_PORT, 0),
-                entry(CONTEXT_TYPE, OPAProperties.Request.Context.DEFAULT_TYPE),
-                entry(CONTEXT_DATA, Map.ofEntries(
-                    entry("hello", "world")
-                ))
-            )),
-            entry(RESOURCE, Map.ofEntries(
-                entry(RESOURCE_ID, "unit/test"),
-                entry(RESOURCE_TYPE, OPAProperties.Request.Resource.DEFAULT_TYPE)
-            )),
-            entry(SUBJECT, Map.ofEntries(
-                entry(SUBJECT_AUTHORITIES, List.of(
-                    Map.ofEntries(entry("authority", "ROLE_USER")),
-                    Map.ofEntries(entry("authority", "ROLE_ADMIN"))
-                )),
-                entry(SUBJECT_DETAILS, Map.ofEntries(
-                    entry("remoteAddress", "192.0.2.123"),
-                    entry("sessionId", "null")
-                )),
-                entry(SUBJECT_ID, "testuser"),
-                entry(SUBJECT_TYPE, OPAProperties.Request.Subject.DEFAULT_TYPE)
+            entry(SUBJECT_DETAILS, Map.ofEntries(
+                entry("remoteAddress", "192.0.2.123"),
+                entry("sessionId", "null")
             ))
-        );
+        ));
+        expectedResponseContextData.put(SUBJECT, subject);
 
-        OPAResponseContext expectedResponseContext = new OPAResponseContext();
+        var expectedResponseContext = new OPAResponseContext();
         expectedResponseContext.setReasonUser(Map.ofEntries(
             entry("en", "echo rule always allows"),
             entry("other", "other reason key")
@@ -197,26 +155,24 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
         expectedResponseContext.setId("0");
         expectedResponseContext.setData(expectedResponseContextData);
 
-        OPAResponse expectedResponse = new OPAResponse();
+        var expectedResponse = new OPAResponse();
         expectedResponse.setDecision(true);
         expectedResponse.setContext(expectedResponseContext);
 
-        ContextDataProvider contextDataProvider = new ConstantContextDataProvider(Map.ofEntries(
+        var contextDataProvider = new ConstantContextDataProvider(Map.ofEntries(
             entry("hello", "world")
         ));
-        Authentication mockAuth = this.createMockAuthentication();
+        var mockAuth = createMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opaClient = new OPAClient(address, HEADERS);
-        OPAAuthorizationManager opaAuthorizationManager =
-            new OPAAuthorizationManager(opaClient, "policy/echo", contextDataProvider);
-        OPAResponse actualResponse = opaAuthorizationManager.opaRequest(this.authenticationSupplier, this.context);
+        var opaClient = new OPAClient(address, HEADERS);
+        var opaAuthorizationManager = new OPAAuthorizationManager(opaClient, "policy/echo", contextDataProvider);
+        var actualResponse = opaAuthorizationManager.opaRequest(authenticationSupplier, context);
 
         assertEquals(expectedResponse.getDecision(), actualResponse.getDecision());
         assertEquals(expectedResponse.getContext().getId(), actualResponse.getContext().getId());
         assertEquals(expectedResponse.getContext().getReasonUser(), actualResponse.getContext().getReasonUser());
 
-        List<String> dataDiffs = jsonDiff(expectedResponse.getContext().getData(),
-            actualResponse.getContext().getData());
+        var dataDiffs = jsonDiff(expectedResponse.getContext().getData(), actualResponse.getContext().getData());
 
         System.out.printf("#### expected context data\n%s\n", jsonPretty(expectedResponseContextData));
         System.out.printf("#### actual context data\n%s\n", jsonPretty(actualResponse.getContext().getData()));
@@ -236,34 +192,9 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
      */
     @Test
     public void testOPAAuthorizationManagerNullMetadata() {
-        Map<String, Object> expectedResponseContextData = Map.ofEntries(
-            entry(ACTION, Map.ofEntries(
-                entry(ACTION_HEADERS, Map.ofEntries(
-                    entry("UnitTestHeader", "123abc")
-                )),
-                entry(ACTION_NAME, "GET"),
-                entry(ACTION_PROTOCOL, "HTTP/1.1")
-            )),
-            entry(CONTEXT, Map.ofEntries(
-                entry(CONTEXT_HOST, "example.com"),
-                entry(CONTEXT_IP, "192.0.2.123"),
-                entry(CONTEXT_PORT, 0),
-                entry(CONTEXT_TYPE, "http"),
-                entry(CONTEXT_DATA, Map.ofEntries(
-                    entry("hello", "world")
-                ))
-            )),
-            entry(RESOURCE, Map.ofEntries(
-                entry(RESOURCE_ID, "unit/test"),
-                entry(RESOURCE_TYPE, "endpoint")
-            )),
-            entry(SUBJECT, Map.ofEntries(
-                entry(SUBJECT_ID, "testuser"),
-                entry(SUBJECT_TYPE, "java_authentication")
-            ))
-        );
+        Map<String, Object> expectedResponseContextData = createNullMockAuthOPAInput();
 
-        OPAResponseContext expectedResponseContext = new OPAResponseContext();
+        var expectedResponseContext = new OPAResponseContext();
         expectedResponseContext.setReasonUser(Map.ofEntries(
             entry("en", "echo rule always allows"),
             entry("other", "other reason key")
@@ -271,25 +202,24 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
         expectedResponseContext.setId("0");
         expectedResponseContext.setData(expectedResponseContextData);
 
-        OPAResponse expectedResponse = new OPAResponse();
+        var expectedResponse = new OPAResponse();
         expectedResponse.setDecision(true);
         expectedResponse.setContext(expectedResponseContext);
 
-        ContextDataProvider contextDataProvider = new ConstantContextDataProvider(Map.ofEntries(
+        var contextDataProvider = new ConstantContextDataProvider(Map.ofEntries(
             entry("hello", "world")
         ));
-        Authentication mockAuth = this.createNullMockAuthentication();
+        var mockAuth = createNullMockAuthentication();
         when(authenticationSupplier.get()).thenReturn(mockAuth);
-        OPAClient opaClient = new OPAClient(address, HEADERS);
-        OPAAuthorizationManager opaAuthorizationManager =
-            new OPAAuthorizationManager(opaClient, "policy/echo", contextDataProvider);
-        OPAResponse actualResponse = opaAuthorizationManager.opaRequest(this.authenticationSupplier, this.context);
+        var opaClient = new OPAClient(address, HEADERS);
+        var opaAuthorizationManager = new OPAAuthorizationManager(opaClient, "policy/echo", contextDataProvider);
+        var actualResponse = opaAuthorizationManager.opaRequest(authenticationSupplier, context);
 
         assertEquals(expectedResponse.getDecision(), actualResponse.getDecision());
         assertEquals(expectedResponse.getContext().getId(), actualResponse.getContext().getId());
         assertEquals(expectedResponse.getContext().getReasonUser(), actualResponse.getContext().getReasonUser());
 
-        List<String> dataDiffs = jsonDiff(expectedResponse.getContext().getData(),
+        var dataDiffs = jsonDiff(expectedResponse.getContext().getData(),
             actualResponse.getContext().getData());
 
         System.out.printf("#### expected context data\n%s\n", jsonPretty(expectedResponseContextData));
