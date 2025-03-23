@@ -232,7 +232,10 @@ Spring-Security supports
 be used to publish events when a request is authorized or denied. By following the spring-security convention,
 `OPAAuthorizationEventPublisher` publishes `AuthorizationDeniedEvent` when a request is denied, however does not
 publish `AuthorizationGrantedEvent` when a request is granted (since it could be quite noisy). Clients could change
-this behavior using `opa.authorization-event.denied.enabled` and `opa.authorization-event.granted.enabled` properties.
+this behavior via `opa.authorization-event.denied.enabled` and `opa.authorization-event.granted.enabled` properties.
+
+Emitted `AuthorizationDeniedEvent` and `AuthorizationGrantedEvent` contain `OPAAuthorizationDecision` which has a
+reference to the corresponding `OPAResponse` and clients could access the response returned from the OPA server.
 
 In order to listen to these events, clients could annotate a method with `@EventListener` in a bean, such as:
 ```java
