@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class OPAInputActionCustomizerTest extends BaseOpaInputCustomizerIntegrationTest {
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testOPAInputActionCustomizer() {
         var actualResponseContextData = callAuthorizationManagerAndVerify();
         assertNotNull(actualResponseContextData.get(ACTION));

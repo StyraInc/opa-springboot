@@ -3,6 +3,7 @@ package com.styra.opa.springboot;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.styra.opa.OPAClient;
 import com.styra.opa.OPAException;
+import com.styra.opa.springboot.authorization.OPAAuthorizationDecision;
 import com.styra.opa.springboot.autoconfigure.OPAProperties;
 import com.styra.opa.springboot.input.OPAInputActionCustomizer;
 import com.styra.opa.springboot.input.OPAInputContextCustomizer;
@@ -178,9 +179,9 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
         OPAResponse opaResponse = opaRequest(authenticationSupplier, object);
         if (opaResponse == null) {
             LOGGER.trace("OPA provided a null response, default-denying access");
-            return new AuthorizationDecision(false);
+            return new OPAAuthorizationDecision(false, null);
         }
-        return new AuthorizationDecision(opaResponse.getDecision());
+        return new OPAAuthorizationDecision(opaResponse.getDecision(), opaResponse);
     }
 
     /**

@@ -3,6 +3,7 @@ package com.styra.opa.springboot.autoconfigure;
 import com.styra.opa.OPAClient;
 import com.styra.opa.springboot.OPAAuthorizationManager;
 import com.styra.opa.springboot.OPAPathSelector;
+import com.styra.opa.springboot.authorization.OPAAuthorizationEventPublisher;
 import com.styra.opa.springboot.input.OPAInputValidator;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -11,6 +12,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -50,10 +52,20 @@ public class OPAAutoConfiguration {
     }
 
     /**
-     * Create an {@link OPAInputValidator}.
+     * Create an {@link OPAInputValidator} to validate the OPA input's required fields before sending request to the
+     * OPA server.
      */
     @Bean
     public OPAInputValidator opaInputValidator() {
         return new OPAInputValidator();
+    }
+
+    /**
+     * Create an {@link OPAAuthorizationEventPublisher} to publish denied/granted authorization events.
+     */
+    @Bean
+    public OPAAuthorizationEventPublisher opaAuthorizationEventPublisher(ApplicationEventPublisher publisher,
+                                                                         OPAProperties opaProperties) {
+        return new OPAAuthorizationEventPublisher(publisher, opaProperties);
     }
 }

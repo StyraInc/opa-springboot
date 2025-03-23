@@ -132,6 +132,7 @@ class OPAAuthorizationManagerTest extends BaseIntegrationTest {
      * By reading back the input, we can make sure the OPA input has the right structure and content.
      */
     @Test
+    @SuppressWarnings("unchecked")
     public void testOPAAuthorizationManagerEcho() {
         Map<String, Object> expectedResponseContextData = new HashMap<>(createNullMockAuthOPAInput());
         Map<String, Object> subject = new HashMap<>((Map<String, Object>) expectedResponseContextData.get(SUBJECT));

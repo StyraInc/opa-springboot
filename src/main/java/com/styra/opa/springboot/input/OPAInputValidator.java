@@ -51,6 +51,7 @@ public final class OPAInputValidator {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void validateKey(Map<String, Object> input, String entity, String key) {
         Map<String, Object> entityMap = (Map<String, Object>) input.get(entity);
         if (entityMap.get(key) == null) {
