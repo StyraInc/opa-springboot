@@ -234,6 +234,13 @@ be used to publish events when a request is authorized or denied. By following t
 publish `AuthorizationGrantedEvent` when a request is granted (since it could be quite noisy). Clients could change
 this behavior via `opa.authorization-event.denied.enabled` and `opa.authorization-event.granted.enabled` properties.
 
+> [!IMPORTANT]
+> Besides this feature, OPA server can periodically report decision logs to remote HTTP servers, using custom
+plugins, or to the console output; or any combination thereof. The decision logs contain events that describe policy
+queries. The decision logs is the preferred logging mechanism for large-scale deployments, as it unifies decision logs
+regardless of the client technologies. For more information, see the
+[OPA Decision Logs](https://www.openpolicyagent.org/docs/latest/management-decision-logs/).
+
 Emitted `AuthorizationDeniedEvent` and `AuthorizationGrantedEvent` contain `OPAAuthorizationDecision` which has a
 reference to the corresponding `OPAResponse` and clients could access the response returned from the OPA server.
 
