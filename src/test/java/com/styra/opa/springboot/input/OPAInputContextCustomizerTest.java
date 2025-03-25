@@ -41,7 +41,9 @@ public class OPAInputContextCustomizerTest {
     @Nested
     @Import(NotNullOPAInputContextCustomizerTest.NotNullOPAInputContextCustomizerConfig.class)
     class NotNullOPAInputContextCustomizerTest extends BaseOpaInputCustomizerIntegrationTest {
+
         @Test
+        @SuppressWarnings("unchecked")
         public void testNotNullOPAInputContextCustomizer() {
             var actualResponseContextData = callAuthorizationManagerAndVerify();
             assertNotNull(actualResponseContextData.get(CONTEXT));

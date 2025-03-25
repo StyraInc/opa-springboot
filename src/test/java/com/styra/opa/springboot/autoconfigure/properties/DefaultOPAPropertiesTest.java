@@ -8,8 +8,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnableConfigurationProperties(OPAProperties.class)
 @ExtendWith(SpringExtension.class)
@@ -30,5 +32,7 @@ public class DefaultOPAPropertiesTest {
             opaProperties.getRequest().getSubject().getType());
         assertEquals(OPAProperties.Response.Context.DEFAULT_REASON_KEY,
             opaProperties.getResponse().getContext().getReasonKey());
+        assertTrue(opaProperties.getAuthorizationEvent().getDenied().isEnabled());
+        assertFalse(opaProperties.getAuthorizationEvent().getGranted().isEnabled());
     }
 }

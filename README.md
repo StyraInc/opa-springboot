@@ -32,7 +32,6 @@ Using `OPAAuthorizationManager`, HTTP requests could be authorized:
 
 ```java
 import com.styra.opa.springboot.OPAAuthorizationManager;
-import com.styra.opa.OPAClient;
 
 @Configuration
 @EnableWebSecurity
@@ -51,6 +50,24 @@ public class SecurityConfig {
 ```
 Auto-configuration will be done using `OPAAutoConfiguration`. If any customization be needed, custom `OPAClient`
 or `OPAAuthorizationManager` beans could be defined by clients.
+
+### OPAClient
+A custom `OPAClient` bean could be defined to send custom headers to the OPA server, or using custom
+`com.styra.opa.openapi.utils.HTTPClient`, such as:
+
+```java
+import com.styra.opa.OPAClient;
+
+@Configuration
+public class OPAConfig {
+
+    @Bean
+    public OPAClient opaClient(OPAProperties opaProperties) {
+        var headers = Map.ofEntries(entry("Authorization", "Bearer secret"));
+        return new OPAClient(opaProperties.getUrl(), headers);
+    }
+}
+```
 
 ### OPAProperties
 Configuration properties are defined in `OPAProperties` and can be set
@@ -72,6 +89,11 @@ opa:
     response:
         context:
             reason-key: de # Key to search for decision reasons in the response. Default is "en".
+    authorization-event:
+        denied:
+            enabled: false # Whether to publish an AuthorizationDeniedEvent when a request is denied. Default is true.
+        granted:
+            enabled: true # Whether to publish an AuthorizationGrantedEvent when a request is granted. Default is false.
 ```
 
 ### OPAPathSelector
@@ -112,7 +134,7 @@ keys with not-null values:
 - `subject.[type, id]`
 - `context.type`, if `context` exists
 
-#### OPAInputSubjectCustomizer
+#### 1. OPAInputSubjectCustomizer
 Clients could define an `OPAInputSubjectCustomizer` bean to customize the `subject` part of the `input`. `subject` map
 must at least contain `type` and `id` keys with not-null values, though their values could be modified.
 
@@ -137,7 +159,7 @@ public class OPAConfig {
 }
 ```
 
-#### OPAInputResourceCustomizer
+#### 2. OPAInputResourceCustomizer
 Clients could define an `OPAInputResourceCustomizer` bean to customize the `resource` part of the `input`. `resource`
 map must at least contain `type` and `id` keys with not-null values, though their values could be modified.
 
@@ -160,7 +182,7 @@ public class OPAConfig {
 }
 ```
 
-#### OPAInputActionCustomizer
+#### 3. OPAInputActionCustomizer
 Clients could define an `OPAInputActionCustomizer` bean to customize the `action` part of the `input`. `action` map
 must at least contain `name` key with a not-null value, though its value could be modified.
 
@@ -185,7 +207,7 @@ public class OPAConfig {
 }
 ```
 
-#### OPAInputContextCustomizer
+#### 4. OPAInputContextCustomizer
 Clients could define an `OPAInputContextCustomizer` bean to customize the `context` part of the `input`. `context` map
 could be null; however if it is not-null, it must at least contain `type` key with a not-null value, though its value
 could be modified.
@@ -200,6 +222,43 @@ public class OPAConfig {
     @Bean
     public OPAInputContextCustomizer opaInputContextCustomizer() {
         return (authentication, requestAuthorizationContext, context) -> null;
+    }
+}
+```
+
+### Authorization Events
+Spring-Security supports
+[Authorization Events](https://docs.spring.io/spring-security/reference/servlet/authorization/events.html) which could
+be used to publish events when a request is authorized or denied. By following the spring-security convention,
+`OPAAuthorizationEventPublisher` publishes `AuthorizationDeniedEvent` when a request is denied, however does not
+publish `AuthorizationGrantedEvent` when a request is granted (since it could be quite noisy). Clients could change
+this behavior via `opa.authorization-event.denied.enabled` and `opa.authorization-event.granted.enabled` properties.
+
+> [!IMPORTANT]
+> Besides this feature, OPA server can periodically report decision logs to remote HTTP servers, using custom
+plugins, or to the console output; or any combination thereof. The decision logs contain events that describe policy
+queries. The decision logs is the preferred logging mechanism for large-scale deployments, as it unifies decision logs
+regardless of the client technologies. For more information, see the
+[OPA Decision Logs](https://www.openpolicyagent.org/docs/latest/management-decision-logs/).
+
+Emitted `AuthorizationDeniedEvent` and `AuthorizationGrantedEvent` contain `OPAAuthorizationDecision` which has a
+reference to the corresponding `OPAResponse` and clients could access the response returned from the OPA server.
+
+In order to listen to these events, clients could annotate a method with `@EventListener` in a bean, such as:
+```java
+import org.springframework.context.event.EventListener;
+
+@Component
+public class OPAAuthorizationEventListener {
+
+    @EventListener
+    public void onDeny(AuthorizationDeniedEvent denied) {
+        // ...
+    }
+
+    @EventListener
+    public void onGrant(AuthorizationGrantedEvent granted) {
+        // ...
     }
 }
 ```

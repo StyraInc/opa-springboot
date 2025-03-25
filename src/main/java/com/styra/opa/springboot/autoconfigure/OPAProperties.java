@@ -25,6 +25,7 @@ public class OPAProperties {
     private String path;
     private Request request = new Request();
     private Response response = new Response();
+    private AuthorizationEvent authorizationEvent = new AuthorizationEvent();
 
     @Data
     @NoArgsConstructor
@@ -92,5 +93,20 @@ public class OPAProperties {
              */
             private String reasonKey = DEFAULT_REASON_KEY;
         }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AuthorizationEvent {
+        private AuthorizationEventType denied = new AuthorizationEventType(true);
+        private AuthorizationEventType granted = new AuthorizationEventType(false);
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AuthorizationEventType {
+        private boolean enabled;
     }
 }

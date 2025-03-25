@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class OPAInputResourceCustomizerTest extends BaseOpaInputCustomizerIntegrationTest {
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testOPAInputResourceCustomizer() {
         var actualResponseContextData = callAuthorizationManagerAndVerify();
         assertNotNull(actualResponseContextData.get(RESOURCE));
