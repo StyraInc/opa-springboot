@@ -1,5 +1,11 @@
 # OPA Spring Boot SDK Changelog
 
+## v1.0.0
+
+* Add `OPAPathSelector` to customize path selection
+* Add `OPAInputSubjectCustomizer`, `OPAInputResourceCustomizer`, `OPAInputActionCustomizer` and `OPAInputContextCustomizer` beans to override default request input
+* Add `OPAAuthorizationEventPublisher` to publish deny or granted events
+
 ## v0.1.1
 
 * Autowire `OPAProperties` in `OPAAutoConfiguration`
