@@ -66,6 +66,9 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
 }
 
+apply plugin: 'application'
+mainClassName = 'com.styra.opa.springboot'
+
 tasks.named('test') {
     useJUnitPlatform()
 }
