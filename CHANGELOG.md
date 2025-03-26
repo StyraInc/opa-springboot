@@ -1,5 +1,7 @@
 # OPA Spring Boot SDK Changelog
 
+## v1.0.1 (unreleased)
+
 ## v1.0.0
 
 * Add `OPAPathSelector` to customize path selection
