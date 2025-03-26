@@ -1,2 +1,4 @@
 com.styra.opa.springboot
+com.styra.opa.springboot.authorization
 com.styra.opa.springboot.autoconfigure
+com.styra.opa.springboot.input
