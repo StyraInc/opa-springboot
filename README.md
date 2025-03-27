@@ -242,9 +242,10 @@ regardless of the client technologies. For more information, see the
 [OPA Decision Logs](https://www.openpolicyagent.org/docs/latest/management-decision-logs/).
 
 Emitted `AuthorizationDeniedEvent` and `AuthorizationGrantedEvent` contain `OPAAuthorizationDecision` which has a
-reference to the corresponding `OPAResponse` and clients could access the response returned from the OPA server.
+reference to the corresponding `OPAResponse` and clients could access the response returned from the OPA server. In
+order to listen to these events, clients could annotate a method with `@EventListener` in a bean.
 
-In order to listen to these events, clients could annotate a method with `@EventListener` in a bean, such as:
+Example listener to receive both denied and granted events:
 ```java
 import org.springframework.context.event.EventListener;
 
@@ -259,6 +260,47 @@ public class OPAAuthorizationEventListener {
     @EventListener
     public void onGrant(AuthorizationGrantedEvent granted) {
         // ...
+    }
+}
+```
+
+### Handling OPAAccessDeniedException
+When a request is denied, `OPAAuthorizationManager` throws an `OPAAccessDeniedException`. Clients could handle this
+exception by implementing `AccessDeniedHandler` or extending `AccessDeniedHandlerImpl`.
+
+Example `AccessDeniedHandler` bean to handle `OPAAccessDeniedException` and generate HTTP responses based on
+[RFC 9457 - Problem Details for HTTP APIs](https://datatracker.ietf.org/doc/html/rfc9457):
+```java
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.styra.opa.springboot.authorization.OPAAccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.web.access.AccessDeniedHandlerImpl;
+
+@Component
+public class OPAAccessDeniedHandler extends AccessDeniedHandlerImpl {
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Override
+    public void handle(HttpServletRequest request, HttpServletResponse response,
+                       AccessDeniedException accessDeniedException) throws IOException, ServletException {
+        if (!(accessDeniedException instanceof OPAAccessDeniedException opaAccessDeniedException)) {
+            super.handle(request, response, accessDeniedException);
+            return;
+        }
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", HttpStatus.FORBIDDEN.value());
+        body.put("title", opaAccessDeniedException.getMessage());
+        var subject = (Map<String, Object>) opaAccessDeniedException.getOpaResponse().getContext().getData().get(SUBJECT);
+        var subjectId = subject.get(SUBJECT_ID);
+        body.put("detail", "Access denied for subject: " + subjectId);
+        body.put("subject", subject);
+        response.setStatus(HttpStatus.FORBIDDEN.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.toString());
+        response.getWriter().write(objectMapper.writeValueAsString(body));
+        response.getWriter().flush();
     }
 }
 ```

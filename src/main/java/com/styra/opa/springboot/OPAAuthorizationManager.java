@@ -3,6 +3,7 @@ package com.styra.opa.springboot;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.styra.opa.OPAClient;
 import com.styra.opa.OPAException;
+import com.styra.opa.springboot.authorization.OPAAccessDeniedException;
 import com.styra.opa.springboot.authorization.OPAAuthorizationDecision;
 import com.styra.opa.springboot.autoconfigure.OPAProperties;
 import com.styra.opa.springboot.input.OPAInputActionCustomizer;
@@ -15,7 +16,6 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.core.Authentication;
@@ -157,7 +157,7 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
     public void verify(Supplier<Authentication> authenticationSupplier, RequestAuthorizationContext object) {
         OPAResponse opaResponse = opaRequest(authenticationSupplier, object);
         if (opaResponse == null) {
-            throw new AccessDeniedException("null response from policy");
+            throw new OPAAccessDeniedException("null response from policy");
         }
 
         boolean decision = opaResponse.getDecision();
@@ -170,7 +170,7 @@ public class OPAAuthorizationManager implements AuthorizationManager<RequestAuth
         if (reason == null) {
             reason = "access denied by policy";
         }
-        throw new AccessDeniedException(reason);
+        throw new OPAAccessDeniedException(reason, opaResponse);
     }
 
     @Override
