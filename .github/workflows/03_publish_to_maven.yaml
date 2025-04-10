@@ -26,15 +26,15 @@ jobs:
         if: ${{ steps.build.outputs.release  == 'true' }}
       - uses: gradle/actions/setup-gradle@v4
         if: ${{ steps.build.outputs.release  == 'true' }}
-      - name: Publish to Sonatype (legacy)
+      - name: Publish to Sonatype Central
         run: |-
           pwd
-          ./gradlew publish --no-daemon
+          ./gradlew build sonatypeCentralUpload --no-daemon
         env:
-          MAVEN_USERNAME: ${{ secrets.ossrh_username }}
-          MAVEN_PASSWORD: ${{ secrets.ossrh_password }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.java_gpg_secret_key }}
-          ORG_GRADLE_PROJECT_signingPassphrase: ${{ secrets.java_gpg_passphrase }}
+          SONATYPE_USERNAME: ${{ secrets.sonatype_username }}
+          SONATYPE_PASSWORD: ${{ secrets.sonatype_password }}
+          SONATYPE_SIGNING_KEY: ${{ secrets.java_gpg_secret_key }}
+          SIGNING_KEY_PASSPHRASE: ${{ secrets.java_gpg_passphrase }}
         if: ${{ steps.build.outputs.release  == 'true' }}
       - uses: ravsamhq/notify-slack-action@v2
         if: ${{ steps.build.outputs.release  == 'true' && always() && env.SLACK_WEBHOOK_URL != '' }}
