@@ -9,9 +9,6 @@ plugins {
     id("checkstyle")
 }
 
-group = 'com.styra'
-version = '1.0.1'
-
 java {
     sourceCompatibility = '17'
     targetCompatibility = '17'
@@ -150,9 +147,9 @@ sonatypeCentralUpload {
 publishing {
     publications {
         maven(MavenPublication) {
-            groupId = 'com.styra.opa'
-            artifactId = 'springboot'
-            version = version
+            groupId = "${groupId}"
+            artifactId = "${artifactId}"
+            version = "${version}"
 
             from components.java
 
