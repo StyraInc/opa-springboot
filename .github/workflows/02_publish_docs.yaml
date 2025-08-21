@@ -17,7 +17,7 @@ jobs:
       - run: ./scripts/is_release.sh >> $GITHUB_OUTPUT
         id: build
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: "17"
           distribution: "corretto"
